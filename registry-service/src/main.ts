@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 
 import { AppModule } from './app.module';
+import { ProblemDetailFilter } from './common/problem-detail.filter';
 import type { LabConfig } from './config/lab.config';
 
 async function bootstrap(): Promise<void> {
@@ -11,6 +12,8 @@ async function bootstrap(): Promise<void> {
   const lab = config.getOrThrow<LabConfig>('lab');
 
   app.setGlobalPrefix('api', { exclude: ['health', 'health/readiness', 'metrics'] });
+
+  app.useGlobalFilters(new ProblemDetailFilter());
 
   app.useGlobalPipes(
     new ValidationPipe({
