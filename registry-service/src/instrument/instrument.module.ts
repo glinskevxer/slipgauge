@@ -7,11 +7,12 @@ import { InstrumentClass } from './instrument-class.entity';
 import { InstrumentController } from './instrument.controller';
 import { InstrumentMapper } from './instrument.mapper';
 import { InstrumentService } from './instrument.service';
+import { ReferenceController } from './reference.controller';
 import { StorageLocation } from './storage-location.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Instrument, InstrumentClass, StorageLocation])],
-  controllers: [InstrumentController],
+  controllers: [InstrumentController, ReferenceController],
   providers: [InstrumentService, InstrumentMapper, AssetTagService],
   exports: [TypeOrmModule, InstrumentService, InstrumentMapper],
 })
