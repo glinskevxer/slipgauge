@@ -1,6 +1,14 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  RelationId,
+} from 'typeorm';
 
 import { AuditedEntity } from '../common/audited.entity';
+import { RuleViolationError } from '../common/errors';
 
 /** Sites nest three or four deep in practice. The guard is only a cycle stop. */
 const MAX_DEPTH = 32;
@@ -29,10 +37,18 @@ export class StorageLocation extends AuditedEntity {
   parent: StorageLocation | null;
 
   /**
+   * Readable without loading the parent, which is what lets the ancestor walk
+   * decide whether a row needs one query or none at all.
+   */
+  @RelationId((location: StorageLocation) => location.parent)
+  parentId: number | null;
+
+  /**
    * Codes from the root down, which is what the console renders as a
    * breadcrumb and what the export writes into the location column. Only walks
-   * the parents that were actually loaded; a relation left unfetched simply
-   * ends the path rather than throwing.
+   * the parents that were actually loaded, so a location handed over without a
+   * hydrated chain reports a short path rather than throwing. Load one through
+   * StorageLocationService and the chain is already there.
    */
   pathCodes(): string[] {
     const path: string[] = [];
@@ -61,8 +77,9 @@ export class StorageLocation extends AuditedEntity {
 
   reparent(newParent: StorageLocation | null): void {
     if (newParent && (newParent.id === this.id || newParent.isDescendantOf(this))) {
-      throw new Error(`location ${this.code} cannot be nested inside its own subtree`);
+      throw new RuleViolationError(`location ${this.code} cannot be nested inside its own subtree`);
     }
     this.parent = newParent;
+    this.parentId = newParent ? newParent.id : null;
   }
 }

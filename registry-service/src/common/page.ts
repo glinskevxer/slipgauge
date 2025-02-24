@@ -1,3 +1,5 @@
+import { BadRequestError } from './errors';
+
 /**
  * The page envelope every list endpoint returns. Published by the service
  * rather than leaking whatever the ORM's own paging type happens to be this
@@ -78,7 +80,7 @@ export class SortWhitelist {
       const path = this.allowed.get(name);
 
       if (!path) {
-        throw new Error(
+        throw new BadRequestError(
           `cannot sort by ${name}, allowed columns are ${[...this.allowed.keys()].join(', ')}`,
         );
       }

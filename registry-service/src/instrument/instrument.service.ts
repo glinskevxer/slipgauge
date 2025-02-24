@@ -15,6 +15,7 @@ import { InstrumentClass } from './instrument-class.entity';
 import { InstrumentMapper } from './instrument.mapper';
 import { InstrumentStatus } from './instrument.enums';
 import { StorageLocation } from './storage-location.entity';
+import { StorageLocationService } from './storage-location.service';
 
 const REGISTER_SORT = new SortWhitelist('assetTag')
   .allow('assetTag')
@@ -32,7 +33,7 @@ export class InstrumentService {
   constructor(
     @InjectRepository(Instrument) private readonly instruments: Repository<Instrument>,
     @InjectRepository(InstrumentClass) private readonly classes: Repository<InstrumentClass>,
-    @InjectRepository(StorageLocation) private readonly locations: Repository<StorageLocation>,
+    private readonly places: StorageLocationService,
     private readonly tags: AssetTagService,
     private readonly mapper: InstrumentMapper,
     private readonly clock: Clock,
@@ -158,12 +159,13 @@ export class InstrumentService {
   async getByAssetTag(assetTag: string): Promise<InstrumentDetail> {
     const instrument = await this.instruments.findOne({
       where: { assetTag },
-      relations: { instrumentClass: true, location: { parent: true } },
+      relations: { instrumentClass: true, location: true },
     });
 
     if (!instrument) {
       throw new NotFoundError('instrument', assetTag);
     }
+    await this.hydrateLocation(instrument);
     return this.mapper.toDetail(instrument);
   }
 
@@ -196,27 +198,31 @@ export class InstrumentService {
   async load(id: number): Promise<Instrument> {
     const instrument = await this.instruments.findOne({
       where: { id },
-      relations: { instrumentClass: true, location: { parent: true } },
+      relations: { instrumentClass: true, location: true },
     });
 
     if (!instrument) {
       throw new NotFoundError('instrument', id);
     }
+    await this.hydrateLocation(instrument);
     return instrument;
+  }
+
+  /**
+   * The detail view prints the whole breadcrumb, and the location arrives from
+   * the join with no parents on it. One query fills the chain in however deep
+   * the tree happens to be.
+   */
+  private async hydrateLocation(instrument: Instrument): Promise<void> {
+    if (instrument.location) {
+      await this.places.hydrate([instrument.location]);
+    }
   }
 
   private async resolveLocation(code: string | null | undefined): Promise<StorageLocation | null> {
     if (!code || !code.trim()) {
       return null;
     }
-    const location = await this.locations.findOne({
-      where: { code },
-      relations: { parent: true },
-    });
-
-    if (!location) {
-      throw new NotFoundError('location', code);
-    }
-    return location;
+    return this.places.byCode(code.trim());
   }
 }

@@ -7,7 +7,7 @@ import type { InstrumentClassView, StorageLocationView } from './dto/instrument.
 import { InstrumentClass } from './instrument-class.entity';
 import { Criticality, Discipline, InstrumentStatus } from './instrument.enums';
 import { InstrumentMapper } from './instrument.mapper';
-import { StorageLocation } from './storage-location.entity';
+import { StorageLocationService } from './storage-location.service';
 
 /**
  * The lookup lists every form on the console needs. Read only and cacheable,
@@ -18,7 +18,7 @@ import { StorageLocation } from './storage-location.entity';
 export class ReferenceController {
   constructor(
     @InjectRepository(InstrumentClass) private readonly classes: Repository<InstrumentClass>,
-    @InjectRepository(StorageLocation) private readonly locations: Repository<StorageLocation>,
+    private readonly locations: StorageLocationService,
     private readonly mapper: InstrumentMapper,
   ) {}
 
@@ -45,10 +45,7 @@ export class ReferenceController {
 
   @Get('locations')
   async listLocations(): Promise<StorageLocationView[]> {
-    const found = await this.locations.find({
-      relations: { parent: { parent: true } },
-      order: { code: 'ASC' },
-    });
+    const found = await this.locations.all();
     return found.map((location) => this.mapper.toLocationView(location));
   }
 

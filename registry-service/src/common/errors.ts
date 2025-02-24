@@ -83,3 +83,14 @@ export class InvalidTransitionError extends RegistryException {
     super(ErrorCode.INVALID_TRANSITION, HttpStatus.CONFLICT, message);
   }
 }
+
+/**
+ * A request the caller could have got right by reading the API. Separate from
+ * the class validator failures only in that nothing here comes from a decorator,
+ * so the filter has no field map to attach.
+ */
+export class BadRequestError extends RegistryException {
+  constructor(message: string) {
+    super(ErrorCode.VALIDATION_FAILED, HttpStatus.BAD_REQUEST, message);
+  }
+}

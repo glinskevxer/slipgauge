@@ -8,9 +8,10 @@ import {
 } from 'typeorm';
 
 import { AuditedEntity } from '../common/audited.entity';
+import { InvalidTransitionError, RuleViolationError } from '../common/errors';
 import { requiredNumericTransformer } from '../common/numeric';
 import { InstrumentClass } from './instrument-class.entity';
-import { InstrumentStatus, canTransition } from './instrument.enums';
+import { InstrumentStatus, canTransition, transitionsFrom } from './instrument.enums';
 import { StorageLocation } from './storage-location.entity';
 
 /**
@@ -100,13 +101,13 @@ export class Instrument extends AuditedEntity {
    */
   applySpan(low: number, high: number, resolution: number): void {
     if (low >= high) {
-      throw new Error('range low must sit below range high');
+      throw new RuleViolationError('range low must sit below range high');
     }
     if (resolution <= 0) {
-      throw new Error('resolution must be positive');
+      throw new RuleViolationError('resolution must be positive');
     }
     if (resolution > high - low) {
-      throw new Error('resolution cannot exceed the span');
+      throw new RuleViolationError('resolution cannot exceed the span');
     }
     this.rangeLow = low;
     this.rangeHigh = high;
@@ -128,14 +129,19 @@ export class Instrument extends AuditedEntity {
 
   transitionTo(target: InstrumentStatus): void {
     if (!canTransition(this.status, target)) {
-      throw new Error(`instrument ${this.assetTag} cannot move from ${this.status} to ${target}`);
+      throw new InvalidTransitionError(
+        `instrument ${this.assetTag} cannot move from ${this.status} to ${target}`,
+      )
+        .with('from', this.status)
+        .with('to', target)
+        .with('allowed', transitionsFrom(this.status));
     }
     this.status = target;
   }
 
   retire(on: string): void {
     if (on < this.acquiredOn) {
-      throw new Error('cannot retire an instrument before it was acquired');
+      throw new RuleViolationError('cannot retire an instrument before it was acquired');
     }
     this.transitionTo(InstrumentStatus.RETIRED);
     this.retiredOn = on;

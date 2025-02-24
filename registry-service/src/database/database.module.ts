@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { parseDatabaseUrl } from '../config/connection-url';
 import type { DatabaseConfig } from '../config/database.config';
 import { MIGRATIONS } from './migrations';
 
@@ -18,12 +19,15 @@ import { MIGRATIONS } from './migrations';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
         const database = config.getOrThrow<DatabaseConfig>('database');
+        const target = parseDatabaseUrl(database.url);
 
         return {
           type: 'postgres' as const,
-          url: database.url,
-          username: database.user,
-          password: database.password,
+          host: target.host,
+          port: target.port,
+          database: target.database,
+          username: target.user ?? database.user,
+          password: target.password ?? database.password,
           autoLoadEntities: true,
           synchronize: database.synchronise,
           migrations: MIGRATIONS,
