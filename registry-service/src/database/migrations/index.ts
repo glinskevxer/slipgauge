@@ -1,5 +1,6 @@
 import { InstrumentRegister1736000000001 } from './1736000000001-InstrumentRegister';
 import { ReferenceData1736000000002 } from './1736000000002-ReferenceData';
+import { ToleranceProfiles1736000000003 } from './1736000000003-ToleranceProfiles';
 
 /**
  * Every migration, in the order they run.
@@ -8,4 +9,8 @@ import { ReferenceData1736000000002 } from './1736000000002-ReferenceData';
  * source and from a built bundle, and a migration that silently does not run
  * is the worst failure this file could have.
  */
-export const MIGRATIONS = [InstrumentRegister1736000000001, ReferenceData1736000000002];
+export const MIGRATIONS = [
+  InstrumentRegister1736000000001,
+  ReferenceData1736000000002,
+  ToleranceProfiles1736000000003,
+];
