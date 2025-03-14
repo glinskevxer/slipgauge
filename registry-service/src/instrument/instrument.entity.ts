@@ -4,9 +4,11 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  RelationId,
   VersionColumn,
 } from 'typeorm';
 
+import { ToleranceProfile } from '../calibration/tolerance-profile.entity';
 import { AuditedEntity } from '../common/audited.entity';
 import { InvalidTransitionError, RuleViolationError } from '../common/errors';
 import { requiredNumericTransformer } from '../common/numeric';
@@ -90,6 +92,17 @@ export class Instrument extends AuditedEntity {
 
   @Column({ name: 'retired_on', type: 'date', nullable: true })
   retiredOn: string | null;
+
+  /**
+   * The profile this one instrument is held to, when it differs from what its
+   * class works to. Null is the normal case and means fall back to the class.
+   */
+  @ManyToOne(() => ToleranceProfile, { nullable: true })
+  @JoinColumn({ name: 'tolerance_profile_id' })
+  toleranceProfile: ToleranceProfile | null;
+
+  @RelationId((instrument: Instrument) => instrument.toleranceProfile)
+  toleranceProfileId: number | null;
 
   @VersionColumn({ name: 'row_version' })
   rowVersion: number;
