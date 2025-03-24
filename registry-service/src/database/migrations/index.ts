@@ -1,6 +1,7 @@
 import { InstrumentRegister1736000000001 } from './1736000000001-InstrumentRegister';
 import { ReferenceData1736000000002 } from './1736000000002-ReferenceData';
 import { Certificates1736000000005 } from './1736000000005-Certificates';
+import { Traceability1736000000006 } from './1736000000006-Traceability';
 import { ProfileClassLinks1736000000004 } from './1736000000004-ProfileClassLinks';
 import { ToleranceProfiles1736000000003 } from './1736000000003-ToleranceProfiles';
 
@@ -17,4 +18,5 @@ export const MIGRATIONS = [
   ToleranceProfiles1736000000003,
   ProfileClassLinks1736000000004,
   Certificates1736000000005,
+  Traceability1736000000006,
 ];

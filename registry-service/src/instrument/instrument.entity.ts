@@ -104,6 +104,13 @@ export class Instrument extends AuditedEntity {
   @RelationId((instrument: Instrument) => instrument.toleranceProfile)
   toleranceProfileId: number | null;
 
+  /**
+   * The national metrology institute this instrument is ultimately traceable
+   * to. Only the standards that terminate a chain carry one.
+   */
+  @Column({ name: 'traceable_to', type: 'varchar', length: 64, nullable: true })
+  traceableTo: string | null;
+
   @VersionColumn({ name: 'row_version' })
   rowVersion: number;
 
