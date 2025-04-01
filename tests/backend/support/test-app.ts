@@ -26,7 +26,12 @@ export interface TestApp {
  * data loaded by the migrations is deliberately not here: a suite that wiped
  * the class list would pass and leave the next one with nothing to work from.
  */
-const MUTABLE_TABLES = ['measurement_point', 'calibration_certificate', 'instrument'];
+const MUTABLE_TABLES = [
+  'certificate_standard',
+  'measurement_point',
+  'calibration_certificate',
+  'instrument',
+];
 
 export async function createTestApp(): Promise<TestApp> {
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
