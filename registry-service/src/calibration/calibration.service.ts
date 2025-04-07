@@ -1,10 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 
-import { ConflictError, NotFoundError, RuleViolationError } from '../common/errors';
+import { ConflictError, ErrorCode, NotFoundError, RuleViolationError } from '../common/errors';
 import { Clock } from '../config/clock';
 import { Instrument } from '../instrument/instrument.entity';
+import {
+  CertificateStandard,
+  ChainReport,
+  TraceabilityValidator,
+  externalStandard,
+  internalStandard,
+} from '../traceability';
 import { CalibrationCertificate, calibrationCertificate } from './calibration-certificate.entity';
 import { CalibrationMapper } from './calibration.mapper';
 import { ConformityAssessor } from './conformity';
@@ -12,8 +19,12 @@ import type { CertificateView } from './dto/certificate.views';
 import {
   MeasurementPointInput,
   RecordCalibrationDto,
+  StandardInput,
   asLeftOf,
   coverageFactorOf,
+  namesExternal,
+  namesInternal,
+  overridesTraceability,
   policyOf,
 } from './dto/record-calibration.dto';
 import { MeasurementPoint, measurementPoint } from './measurement-point.entity';
@@ -38,6 +49,7 @@ export class CalibrationService {
     @InjectRepository(CalibrationCertificate)
     private readonly certificates: Repository<CalibrationCertificate>,
     @InjectRepository(Instrument) private readonly instruments: Repository<Instrument>,
+    private readonly traceability: TraceabilityValidator,
     private readonly profiles: ToleranceProfileService,
     private readonly assessor: ConformityAssessor,
     private readonly mapper: CalibrationMapper,
@@ -90,9 +102,16 @@ export class CalibrationService {
     this.addPoints(certificate, instrument, profile, request);
     certificate.rollUpVerdicts();
 
-    const saved = await this.dataSource.transaction(async (manager) =>
-      manager.getRepository(CalibrationCertificate).save(certificate),
-    );
+    // The certificate, its edges and the chain check all happen on one
+    // connection. Throwing from inside rolls the whole sheet back, so a
+    // refused chain never leaves a half filed certificate behind.
+    const saved = await this.dataSource.transaction(async (manager) => {
+      const written = await manager.getRepository(CalibrationCertificate).save(certificate);
+
+      await this.attachStandards(manager, written, request);
+      await this.enforceTraceability(manager, written, request);
+      return written;
+    });
 
     this.log.log(
       `recorded certificate ${saved.certificateNumber} for ${instrument.assetTag} ` +
@@ -162,6 +181,98 @@ export class CalibrationService {
       this.assessor.assess(asLeft, band, input.expandedUncertainty, policy).verdict,
     );
     return point;
+  }
+
+  /**
+   * Turns the standards on the sheet into chain edges. An entry that names
+   * both an asset tag and an outside reference is rejected rather than
+   * silently preferring one, because the two mean different things when the
+   * chain is later walked.
+   */
+  private async attachStandards(
+    manager: EntityManager,
+    certificate: CalibrationCertificate,
+    request: RecordCalibrationDto,
+  ): Promise<void> {
+    for (const input of request.standards ?? []) {
+      await manager
+        .getRepository(CertificateStandard)
+        .save(await this.buildEdge(certificate, input));
+    }
+  }
+
+  private async buildEdge(
+    certificate: CalibrationCertificate,
+    input: StandardInput,
+  ): Promise<CertificateStandard> {
+    const inward = namesInternal(input);
+    const outward = namesExternal(input);
+
+    if (inward === outward) {
+      throw new RuleViolationError(
+        'each standard needs either an asset tag or an outside reference, and one entry has ' +
+          (inward ? 'both' : 'neither'),
+      );
+    }
+
+    if (inward) {
+      const standard = await this.instrumentByTag((input.assetTag as string).trim());
+
+      if (standard.id === certificate.instrument.id) {
+        throw new RuleViolationError('an instrument cannot be calibrated against itself');
+      }
+      return internalStandard(certificate, standard, input.role);
+    }
+
+    return externalStandard(
+      certificate,
+      (input.externalRef as string).trim(),
+      input.externalLab ?? null,
+      input.externalCertificateNumber ?? null,
+      input.role,
+    ).validFor(
+      input.externalValidFrom ?? null,
+      input.externalValidTo ?? null,
+      input.externalAccreditation ?? null,
+    );
+  }
+
+  /**
+   * A certificate whose chain does not hold is refused, unless the sheet came
+   * with a written reason. The reason is appended to the remarks so it travels
+   * with the certificate rather than living only in a log.
+   */
+  private async enforceTraceability(
+    manager: EntityManager,
+    certificate: CalibrationCertificate,
+    request: RecordCalibrationDto,
+  ): Promise<void> {
+    const report = await this.traceability.validate(certificate, manager);
+
+    if (report.sound) {
+      return;
+    }
+
+    if (overridesTraceability(request)) {
+      const reason = (request.traceabilityOverrideReason as string).trim();
+
+      this.log.warn(
+        `certificate ${certificate.certificateNumber} filed with a broken chain, ` +
+          `reason ${reason}`,
+      );
+      certificate.remarks = appendOverrideNote(certificate.remarks, reason, report);
+      await manager.getRepository(CalibrationCertificate).save(certificate);
+      return;
+    }
+
+    throw new RuleViolationError(report.summarise(), ErrorCode.TRACEABILITY_BROKEN).with(
+      'defects',
+      report.defects.map((defect) => ({ ...defect })),
+    );
+  }
+
+  async chainFor(certificateId: number): Promise<ChainReport> {
+    return this.traceability.validate(await this.load(certificateId));
   }
 
   async get(id: number): Promise<CertificateView> {
@@ -235,4 +346,13 @@ export class CalibrationService {
     }
     return profile;
   }
+}
+
+function appendOverrideNote(
+  remarks: string | null,
+  reason: string,
+  report: ChainReport,
+): string {
+  const note = `Traceability override: ${reason} (${report.summarise()})`;
+  return remarks && remarks.trim() ? `${remarks} ${note}` : note;
 }

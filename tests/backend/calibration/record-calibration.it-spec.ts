@@ -1,6 +1,7 @@
 import request from 'supertest';
 
 import { AcceptancePolicy, Verdict } from '@registry/calibration/conformity';
+import { StandardRole } from '@registry/traceability';
 import { RegisterFixtures } from '../support/fixtures';
 import { TestApp, createTestApp } from '../support/test-app';
 
@@ -24,6 +25,17 @@ describe('filing a calibration sheet', () => {
 
   const http = () => request(harness.app.getHttpServer());
 
+  /** Every sheet needs a reference standard, so the default one is out here. */
+  const OUTSIDE_STANDARD = {
+    externalRef: 'NPL 2024/117',
+    externalLab: 'National Physical Laboratory',
+    externalCertificateNumber: 'NPL-2024-117',
+    externalAccreditation: 'UKAS 0001',
+    externalValidFrom: '2024-11-01',
+    externalValidTo: '2025-10-31',
+    role: StandardRole.REFERENCE,
+  };
+
   function sheet(overrides: Record<string, unknown> = {}) {
     return {
       certificateNumber: 'CAL-2025-0100',
@@ -36,6 +48,7 @@ describe('filing a calibration sheet', () => {
         { sequenceNo: 1, nominal: 5, asFound: 5.0011, expandedUncertainty: 0.0005 },
         { sequenceNo: 2, nominal: 20, asFound: 20.0009, expandedUncertainty: 0.0005 },
       ],
+      standards: [OUTSIDE_STANDARD],
       ...overrides,
     };
   }

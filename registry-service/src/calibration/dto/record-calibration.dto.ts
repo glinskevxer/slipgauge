@@ -14,6 +14,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 
+import { StandardRole } from '../../traceability/standard-role';
 import { AcceptancePolicy } from '../conformity';
 
 /** The coverage factor a bench reports when it does not state one. */
@@ -109,6 +110,16 @@ export class RecordCalibrationDto {
   @ValidateNested({ each: true })
   @Type(() => MeasurementPointInput)
   points: MeasurementPointInput[];
+
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => StandardInput)
+  standards?: StandardInput[];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(400)
+  traceabilityOverrideReason?: string;
 }
 
 export function policyOf(request: RecordCalibrationDto): AcceptancePolicy {
@@ -122,4 +133,63 @@ export function coverageFactorOf(input: MeasurementPointInput): number {
 /** The reading to judge as left with, which is as found when nothing moved. */
 export function asLeftOf(input: MeasurementPointInput): number | null {
   return input.asLeft ?? input.asFound ?? null;
+}
+
+/**
+ * A standard as the bench records it. Either an asset tag this register knows
+ * or an outside reference, never both, which the service checks rather than
+ * the validator because the message needs to name the offending entry.
+ */
+export class StandardInput {
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  assetTag?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  externalRef?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  externalLab?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(48)
+  externalCertificateNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  externalAccreditation?: string;
+
+  @IsOptional()
+  @IsDateString()
+  externalValidFrom?: string;
+
+  @IsOptional()
+  @IsDateString()
+  externalValidTo?: string;
+
+  @IsEnum(StandardRole)
+  role: StandardRole;
+}
+
+export function namesInternal(input: StandardInput): boolean {
+  return !!input.assetTag?.trim();
+}
+
+export function namesExternal(input: StandardInput): boolean {
+  return !!input.externalRef?.trim();
+}
+
+/**
+ * A broken chain can be filed anyway, but only with a written reason. The
+ * quality manager's report lists every certificate that took this route.
+ */
+export function overridesTraceability(request: RecordCalibrationDto): boolean {
+  return !!request.traceabilityOverrideReason?.trim();
 }

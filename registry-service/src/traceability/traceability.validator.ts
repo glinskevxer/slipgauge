@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, LessThanOrEqual, Repository } from 'typeorm';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource, EntityManager, IsNull, LessThanOrEqual } from 'typeorm';
 
 import { CalibrationCertificate } from '../calibration/calibration-certificate.entity';
 import { serviceable } from '../calibration/conformity';
@@ -15,6 +15,7 @@ export const MAX_CHAIN_DEPTH = 12;
 
 /** Mutable state of one walk, kept off the service so two can run at once. */
 interface Walk {
+  readonly manager: EntityManager;
   readonly defects: ChainDefect[];
   readonly visited: Set<number>;
   reachedOutside: boolean;
@@ -31,14 +32,23 @@ interface Walk {
  */
 @Injectable()
 export class TraceabilityValidator {
-  constructor(
-    @InjectRepository(CertificateStandard) private readonly edges: Repository<CertificateStandard>,
-    @InjectRepository(CalibrationCertificate)
-    private readonly certificates: Repository<CalibrationCertificate>,
-  ) {}
+  constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
 
-  async validate(certificate: CalibrationCertificate): Promise<ChainReport> {
-    const walk: Walk = { defects: [], visited: new Set<number>(), reachedOutside: false };
+  /**
+   * The manager argument is what lets a certificate be validated inside the
+   * transaction that wrote it. Without it the walk reads a connection that
+   * cannot see the edges yet and every new certificate looks untraceable.
+   */
+  async validate(
+    certificate: CalibrationCertificate,
+    manager: EntityManager = this.dataSource.manager,
+  ): Promise<ChainReport> {
+    const walk: Walk = {
+      manager,
+      defects: [],
+      visited: new Set<number>(),
+      reachedOutside: false,
+    };
     const depth = await this.descend(walk, certificate, 0);
 
     return walk.defects.length === 0
@@ -56,7 +66,7 @@ export class TraceabilityValidator {
       return depth;
     }
 
-    const used = await this.edges.find({
+    const used = await walk.manager.getRepository(CertificateStandard).find({
       where: { certificate: { id: certificate.id } },
       relations: { standard: { instrumentClass: true } },
       order: { id: 'ASC' },
@@ -102,7 +112,7 @@ export class TraceabilityValidator {
       walk.defects.push(chainDefect.notAStandard(standard.assetTag));
     }
 
-    const covering = await this.effectiveOn(standard.id, usedOn);
+    const covering = await this.effectiveOn(walk.manager, standard.id, usedOn);
 
     if (!covering) {
       walk.defects.push(chainDefect.noCertificate(standard.assetTag, usedOn));
@@ -127,10 +137,11 @@ export class TraceabilityValidator {
    * through the later visit.
    */
   private async effectiveOn(
+    manager: EntityManager,
     instrumentId: number,
     on: string,
   ): Promise<CalibrationCertificate | null> {
-    return this.certificates.findOne({
+    return manager.getRepository(CalibrationCertificate).findOne({
       where: {
         instrument: { id: instrumentId },
         performedOn: LessThanOrEqual(on),
