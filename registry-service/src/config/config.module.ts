@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule as NestConfigModule } from '@nestjs/config';
 
+import { intervalPolicyConfig } from '../interval/interval-policy';
 import { Clock } from './clock';
 import { databaseConfig } from './database.config';
 import { labConfig } from './lab.config';
@@ -16,7 +17,7 @@ import { securityConfig } from './security.config';
     NestConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      load: [labConfig, databaseConfig, securityConfig],
+      load: [labConfig, databaseConfig, securityConfig, intervalPolicyConfig],
       envFilePath: ['.env.local', '.env'],
     }),
   ],
