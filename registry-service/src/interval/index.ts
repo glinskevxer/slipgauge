@@ -12,5 +12,7 @@ export {
   stepFor,
   validatePolicy,
 } from './interval-policy';
+export { IntervalDecision, addDays, intervalDecision } from './interval-decision.entity';
 export { IntervalEngine } from './interval.engine';
+export { IntervalService } from './interval.service';
 export { IntervalModule } from './interval.module';

@@ -111,6 +111,20 @@ export class Instrument extends AuditedEntity {
   @Column({ name: 'traceable_to', type: 'varchar', length: 64, nullable: true })
   traceableTo: string | null;
 
+  /**
+   * The live interval and the date it falls due, copied down from the current
+   * interval decision. The recall list is one index scan on next_due_on rather
+   * than a replay per instrument, and the decision table stays the record.
+   */
+  @Column({ name: 'interval_days', type: 'int', nullable: true })
+  intervalDays: number | null;
+
+  @Column({ name: 'next_due_on', type: 'date', nullable: true })
+  nextDueOn: string | null;
+
+  @Column({ name: 'last_calibrated_on', type: 'date', nullable: true })
+  lastCalibratedOn: string | null;
+
   @VersionColumn({ name: 'row_version' })
   rowVersion: number;
 
@@ -157,6 +171,27 @@ export class Instrument extends AuditedEntity {
         .with('allowed', transitionsFrom(this.status));
     }
     this.status = target;
+  }
+
+  /** Writes the interval a decision arrived at onto the instrument itself. */
+  applySchedule(intervalDays: number, lastCalibratedOn: string | null, nextDueOn: string): void {
+    if (intervalDays <= 0) {
+      throw new RuleViolationError('a calibration interval must be at least one day');
+    }
+    this.intervalDays = intervalDays;
+    this.lastCalibratedOn = lastCalibratedOn;
+    this.nextDueOn = nextDueOn;
+  }
+
+  /** How many days remain before the instrument is due, negative when overdue. */
+  daysUntilDue(today: string): number | null {
+    if (this.nextDueOn === null) {
+      return null;
+    }
+    const due = Date.parse(`${this.nextDueOn}T00:00:00Z`);
+    const now = Date.parse(`${today}T00:00:00Z`);
+
+    return Math.round((due - now) / 86_400_000);
   }
 
   retire(on: string): void {
