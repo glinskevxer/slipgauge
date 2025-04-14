@@ -5,6 +5,7 @@ import { DataSource, EntityManager, Repository } from 'typeorm';
 import { ConflictError, ErrorCode, NotFoundError, RuleViolationError } from '../common/errors';
 import { Clock } from '../config/clock';
 import { Instrument } from '../instrument/instrument.entity';
+import { IntervalService } from '../interval/interval.service';
 import {
   CertificateStandard,
   ChainReport,
@@ -50,6 +51,7 @@ export class CalibrationService {
     private readonly certificates: Repository<CalibrationCertificate>,
     @InjectRepository(Instrument) private readonly instruments: Repository<Instrument>,
     private readonly traceability: TraceabilityValidator,
+    private readonly intervals: IntervalService,
     private readonly profiles: ToleranceProfileService,
     private readonly assessor: ConformityAssessor,
     private readonly mapper: CalibrationMapper,
@@ -110,6 +112,10 @@ export class CalibrationService {
 
       await this.attachStandards(manager, written, request);
       await this.enforceTraceability(manager, written, request);
+
+      // The interval is worked out inside the same transaction, so a sheet
+      // that ends up refused never moves the recall date either.
+      await this.intervals.reassess(instrument.id, manager);
       return written;
     });
 
@@ -305,8 +311,15 @@ export class CalibrationService {
   async withdraw(id: number, reason: string): Promise<CertificateView> {
     const certificate = await this.load(id);
 
-    certificate.withdraw(reason, this.clock.now());
-    await this.certificates.save(certificate);
+    await this.dataSource.transaction(async (manager) => {
+      certificate.withdraw(reason, this.clock.now());
+      await manager.getRepository(CalibrationCertificate).save(certificate);
+
+      // Withdrawing evidence changes what the interval should have been, so
+      // the engine replays what is left rather than keeping the old answer.
+      await this.intervals.reassess(certificate.instrument.id, manager);
+    });
+
     this.log.warn(`certificate ${certificate.certificateNumber} withdrawn, reason ${reason}`);
     return this.get(id);
   }
