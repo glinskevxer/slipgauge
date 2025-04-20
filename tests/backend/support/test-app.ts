@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 
 import { AppModule } from '@registry/app.module';
 import { ProblemDetailFilter } from '@registry/common/problem-detail.filter';
+import { Clock, FixedClock } from '@registry/config/clock';
 
 /**
  * Boots the whole service against the shared embedded server with the
@@ -34,8 +35,22 @@ const MUTABLE_TABLES = [
   'instrument',
 ];
 
-export async function createTestApp(): Promise<TestApp> {
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+/**
+ * Options a suite can pin. Only the clock so far, because every scheduling
+ * rule reads it and a suite that lets it run gets a different answer tomorrow.
+ */
+export interface TestAppOptions {
+  readonly now?: string;
+}
+
+export async function createTestApp(options: TestAppOptions = {}): Promise<TestApp> {
+  const builder = Test.createTestingModule({ imports: [AppModule] });
+
+  if (options.now) {
+    builder.overrideProvider(Clock).useValue(new FixedClock(new Date(options.now)));
+  }
+
+  const moduleRef = await builder.compile();
 
   const app = moduleRef.createNestApplication();
   app.setGlobalPrefix('api', { exclude: ['health', 'health/readiness', 'metrics'] });

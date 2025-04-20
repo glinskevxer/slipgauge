@@ -113,14 +113,18 @@ export class RecallService {
       return new Map();
     }
 
-    const live = await this.decisions
+    // Read as raw rows on purpose. The relation id is what this needs and
+    // hydrating the decision entities to get at it would load the instrument
+    // back again for every row on the board.
+    const live: { instrument_id: number; basis: string }[] = await this.decisions
       .createQueryBuilder('decision')
-      .select(['decision.id', 'decision.basis', 'decision.instrument'])
+      .select('decision.instrument_id', 'instrument_id')
+      .addSelect('decision.basis', 'basis')
       .where('decision.superseded = false')
       .andWhere('decision.instrument_id in (:...ids)', { ids: [...instrumentIds] })
-      .getMany();
+      .getRawMany();
 
-    return new Map(live.map((decision) => [decision.instrumentId, decision.basis]));
+    return new Map(live.map((row) => [Number(row.instrument_id), row.basis]));
   }
 
   private async toEntries(
