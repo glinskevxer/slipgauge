@@ -28,6 +28,7 @@ export interface TestApp {
  * the class list would pass and leave the next one with nothing to work from.
  */
 const MUTABLE_TABLES = [
+  'usage_record',
   'interval_decision',
   'certificate_standard',
   'measurement_point',

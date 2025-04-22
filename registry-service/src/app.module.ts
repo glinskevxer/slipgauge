@@ -6,9 +6,10 @@ import { DatabaseModule } from './database/database.module';
 import { InstrumentModule } from './instrument/instrument.module';
 import { IntervalModule } from './interval/interval.module';
 import { RecallModule } from './recall/recall.module';
+import { UsageModule } from './usage/usage.module';
 import { TraceabilityModule } from './traceability/traceability.module';
 
 @Module({
-  imports: [ConfigModule, DatabaseModule, InstrumentModule, CalibrationModule, TraceabilityModule, IntervalModule, RecallModule],
+  imports: [ConfigModule, DatabaseModule, InstrumentModule, CalibrationModule, TraceabilityModule, IntervalModule, RecallModule, UsageModule],
 })
 export class AppModule {}
