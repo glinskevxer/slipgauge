@@ -4,6 +4,7 @@ import { DataSource, EntityManager, Repository } from 'typeorm';
 
 import { ConflictError, ErrorCode, NotFoundError, RuleViolationError } from '../common/errors';
 import { Clock } from '../config/clock';
+import { ImpactService } from '../impact/impact.service';
 import { Instrument } from '../instrument/instrument.entity';
 import { IntervalService } from '../interval/interval.service';
 import {
@@ -52,6 +53,7 @@ export class CalibrationService {
     @InjectRepository(Instrument) private readonly instruments: Repository<Instrument>,
     private readonly traceability: TraceabilityValidator,
     private readonly intervals: IntervalService,
+    private readonly impact: ImpactService,
     private readonly profiles: ToleranceProfileService,
     private readonly assessor: ConformityAssessor,
     private readonly mapper: CalibrationMapper,
@@ -116,6 +118,11 @@ export class CalibrationService {
       // The interval is worked out inside the same transaction, so a sheet
       // that ends up refused never moves the recall date either.
       await this.intervals.reassess(instrument.id, manager);
+
+      // An out of tolerance result raises its own assessment here rather than
+      // waiting for somebody to notice. A cascade started a week late is a
+      // week of jobs nobody looked at.
+      await this.impact.raiseIfFailing(written, manager);
       return written;
     });
 

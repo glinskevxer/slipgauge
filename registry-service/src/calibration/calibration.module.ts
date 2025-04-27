@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { InstrumentModule } from '../instrument/instrument.module';
+import { ImpactModule } from '../impact/impact.module';
 import { IntervalModule } from '../interval/interval.module';
 import { TraceabilityModule } from '../traceability/traceability.module';
 import { CalibrationCertificate } from './calibration-certificate.entity';
@@ -19,6 +20,7 @@ import { ToleranceProfileService } from './tolerance-profile.service';
     InstrumentModule,
     TraceabilityModule,
     IntervalModule,
+    ImpactModule,
   ],
   controllers: [CalibrationController, CertificateHistoryController],
   providers: [
