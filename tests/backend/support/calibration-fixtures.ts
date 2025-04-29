@@ -13,6 +13,7 @@ import {
   externalStandard,
   internalStandard,
 } from '@registry/traceability';
+import { UsageRecord, usageRecord } from '@registry/usage/usage-record.entity';
 
 export interface CertificateOptions {
   readonly number?: string;
@@ -103,5 +104,25 @@ export class CalibrationFixtures {
     instrument.markAsReference(true);
     instrument.traceableTo = traceableTo;
     return this.dataSource.getRepository(Instrument).save(instrument);
+  }
+}
+
+/** Usage rows, for suites whose subject is what a failure reached. */
+export class UsageFixtures {
+  constructor(private readonly dataSource: DataSource) {}
+
+  async use(
+    instrument: Instrument,
+    usedOn: string,
+    workOrder: string | null = 'WO-0001',
+    customer: string | null = 'Fenwick Aerospace',
+  ): Promise<UsageRecord> {
+    const record = usageRecord(instrument, usedOn, 'A Technician').onJob(
+      workOrder,
+      customer,
+      'dimensional check',
+    );
+
+    return this.dataSource.getRepository(UsageRecord).save(record);
   }
 }
