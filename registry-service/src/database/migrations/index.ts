@@ -5,6 +5,7 @@ import { Traceability1736000000006 } from './1736000000006-Traceability';
 import { IntervalDecisions1736000000007 } from './1736000000007-IntervalDecisions';
 import { UsageLog1736000000008 } from './1736000000008-UsageLog';
 import { ImpactAssessments1736000000009 } from './1736000000009-ImpactAssessments';
+import { Accounts1736000000010 } from './1736000000010-Accounts';
 import { ProfileClassLinks1736000000004 } from './1736000000004-ProfileClassLinks';
 import { ToleranceProfiles1736000000003 } from './1736000000003-ToleranceProfiles';
 
@@ -25,4 +26,5 @@ export const MIGRATIONS = [
   IntervalDecisions1736000000007,
   UsageLog1736000000008,
   ImpactAssessments1736000000009,
+  Accounts1736000000010,
 ];
