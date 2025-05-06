@@ -1,5 +1,7 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Post } from '@nestjs/common';
 
+import { Role } from '../security/role';
+import { RequireRoles } from '../security/roles.decorator';
 import { CloseAssessmentDto, DisposeItemDto } from './dto/dispose-item.dto';
 import type { ImpactView } from './dto/impact.views';
 import { ImpactService } from './impact.service';
@@ -10,6 +12,7 @@ import { ImpactService } from './impact.service';
  * because an assessment somebody has to remember to start is one that gets
  * started a week late.
  */
+@RequireRoles(Role.AUDITOR)
 @Controller('impact')
 export class ImpactController {
   constructor(private readonly impact: ImpactService) {}
@@ -31,6 +34,7 @@ export class ImpactController {
     return this.impact.forInstrument(instrumentId);
   }
 
+  @RequireRoles(Role.QUALITY_MANAGER)
   @Post(':id/items/:itemId/disposition')
   dispose(
     @Param('id', ParseIntPipe) id: number,
@@ -40,6 +44,7 @@ export class ImpactController {
     return this.impact.disposeItem(id, itemId, request);
   }
 
+  @RequireRoles(Role.QUALITY_MANAGER)
   @Post(':id/closure')
   close(
     @Param('id', ParseIntPipe) id: number,

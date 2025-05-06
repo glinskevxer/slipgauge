@@ -1,5 +1,7 @@
 import { Controller, DefaultValuePipe, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
 
+import { Role } from '../security/role';
+import { RequireRoles } from '../security/roles.decorator';
 import { IntervalDecision } from '../interval/interval-decision.entity';
 import { IntervalService } from '../interval/interval.service';
 import { RecallService } from './recall.service';
@@ -37,6 +39,7 @@ export function toIntervalSummary(decision: IntervalDecision): IntervalSummary {
   };
 }
 
+@RequireRoles(Role.AUDITOR)
 @Controller('recalls')
 export class RecallController {
   constructor(
@@ -66,6 +69,7 @@ export class RecallController {
     return this.recalls.summary(horizonDays);
   }
 
+  @RequireRoles(Role.METROLOGIST)
   @Post('instruments/:instrumentId/reassessment')
   async reassess(
     @Param('instrumentId', ParseIntPipe) instrumentId: number,

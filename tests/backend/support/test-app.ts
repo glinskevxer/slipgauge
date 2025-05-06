@@ -1,10 +1,14 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import request from 'supertest';
 import { DataSource } from 'typeorm';
 
 import { AppModule } from '@registry/app.module';
 import { ProblemDetailFilter } from '@registry/common/problem-detail.filter';
 import { Clock, FixedClock } from '@registry/config/clock';
+import { AppUser } from '@registry/security/app-user.entity';
+import { Role } from '@registry/security/role';
+import { TokenService } from '@registry/security/token.service';
 
 /**
  * Boots the whole service against the shared embedded server with the
@@ -20,6 +24,23 @@ export interface TestApp {
   close(): Promise<void>;
   /** Empties everything a test may have written, leaving reference data alone. */
   reset(): Promise<void>;
+  /**
+   * An access token for a throwaway account holding the given roles. The guard
+   * is global, so a suite about anything else still needs one of these, and
+   * signing in through bcrypt for every suite would cost more than the suite.
+   */
+  tokenFor(...roles: Role[]): string;
+  /** A supertest client that already carries the token on every call. */
+  api(token: string): ApiClient;
+}
+
+/** The verbs the suites use, each pre-authenticated. */
+export interface ApiClient {
+  get(url: string): request.Test;
+  post(url: string): request.Test;
+  put(url: string): request.Test;
+  patch(url: string): request.Test;
+  delete(url: string): request.Test;
 }
 
 /**
@@ -28,6 +49,7 @@ export interface TestApp {
  * the class list would pass and leave the next one with nothing to work from.
  */
 const MUTABLE_TABLES = [
+  'audit_event',
   'impact_item',
   'impact_assessment',
   'usage_record',
@@ -65,10 +87,36 @@ export async function createTestApp(options: TestAppOptions = {}): Promise<TestA
   await app.init();
 
   const dataSource = app.get(DataSource);
+  const tokens = app.get(TokenService);
+
+  const tokenFor = (...roles: Role[]): string => {
+    const account = new AppUser();
+
+    account.id = 999_000;
+    account.username = 'suite.runner';
+    account.displayName = 'Suite runner';
+    account.roles = roles.length > 0 ? roles : [Role.ADMIN];
+    return tokens.issueAccess(account);
+  };
+
+  const api = (token: string): ApiClient => {
+    const agent = () => request(app.getHttpServer());
+    const bearer = `Bearer ${token}`;
+
+    return {
+      get: (url) => agent().get(url).set('Authorization', bearer),
+      post: (url) => agent().post(url).set('Authorization', bearer),
+      put: (url) => agent().put(url).set('Authorization', bearer),
+      patch: (url) => agent().patch(url).set('Authorization', bearer),
+      delete: (url) => agent().delete(url).set('Authorization', bearer),
+    };
+  };
 
   return {
     app,
     dataSource,
+    tokenFor,
+    api,
     close: () => app.close(),
     reset: async () => {
       for (const table of [...MUTABLE_TABLES].reverse()) {

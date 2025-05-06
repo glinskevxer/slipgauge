@@ -12,6 +12,8 @@ import {
 import type { Response } from 'express';
 
 import type { Page } from '../common/page';
+import { Role } from '../security/role';
+import { RequireRoles } from '../security/roles.decorator';
 import type { InstrumentDetail, InstrumentSummary } from './dto/instrument.views';
 import { InstrumentQueryDto } from './dto/instrument-query.dto';
 import { RegisterInstrumentDto } from './dto/register-instrument.dto';
@@ -19,10 +21,12 @@ import { UpdateInstrumentDto } from './dto/update-instrument.dto';
 import { InstrumentService } from './instrument.service';
 import { InstrumentStatus } from './instrument.enums';
 
+@RequireRoles(Role.AUDITOR)
 @Controller('instruments')
 export class InstrumentController {
   constructor(private readonly service: InstrumentService) {}
 
+  @RequireRoles(Role.TECHNICIAN)
   @Post()
   async register(
     @Body() request: RegisterInstrumentDto,
@@ -48,6 +52,7 @@ export class InstrumentController {
     return this.service.getByAssetTag(assetTag);
   }
 
+  @RequireRoles(Role.TECHNICIAN)
   @Put(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -56,6 +61,7 @@ export class InstrumentController {
     return this.service.update(id, request);
   }
 
+  @RequireRoles(Role.TECHNICIAN)
   @Post(':id/status')
   changeStatus(
     @Param('id', ParseIntPipe) id: number,
@@ -64,6 +70,7 @@ export class InstrumentController {
     return this.service.changeStatus(id, target);
   }
 
+  @RequireRoles(Role.METROLOGIST)
   @Post(':id/retirement')
   retire(
     @Param('id', ParseIntPipe) id: number,

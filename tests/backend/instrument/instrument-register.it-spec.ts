@@ -1,8 +1,7 @@
-import request from 'supertest';
-
 import { Instrument } from '@registry/instrument/instrument.entity';
 import { InstrumentStatus } from '@registry/instrument/instrument.enums';
 import { StorageLocation } from '@registry/instrument/storage-location.entity';
+import { Role } from '@registry/security/role';
 import { RegisterFixtures } from '../support/fixtures';
 import { TestApp, createTestApp } from '../support/test-app';
 
@@ -23,7 +22,7 @@ describe('the instrument register', () => {
     await harness.reset();
   });
 
-  const http = () => request(harness.app.getHttpServer());
+  const http = () => harness.api(harness.tokenFor(Role.ADMIN));
 
   const MICROMETER = {
     classCode: 'MIC-EXT',

@@ -1,9 +1,8 @@
-import request from 'supertest';
-
 import { Instrument } from '@registry/instrument/instrument.entity';
 import { InstrumentStatus } from '@registry/instrument/instrument.enums';
 import { IntervalService } from '@registry/interval';
 import { RecallStanding } from '@registry/recall';
+import { Role } from '@registry/security/role';
 import { RegisterFixtures } from '../support/fixtures';
 import { TestApp, createTestApp } from '../support/test-app';
 
@@ -29,7 +28,7 @@ describe('the recall board', () => {
     await harness.reset();
   });
 
-  const http = () => request(harness.app.getHttpServer());
+  const http = () => harness.api(harness.tokenFor(Role.ADMIN));
 
   /** Puts an instrument on the board at an exact due date. */
   async function due(assetTag: string, nextDueOn: string | null): Promise<Instrument> {

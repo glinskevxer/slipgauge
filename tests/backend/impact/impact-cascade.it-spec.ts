@@ -1,5 +1,3 @@
-import request from 'supertest';
-
 import { Verdict } from '@registry/calibration/conformity';
 import {
   ImpactDisposition,
@@ -9,6 +7,7 @@ import {
   ImpactStatus,
 } from '@registry/impact';
 import { Instrument } from '@registry/instrument/instrument.entity';
+import { Role } from '@registry/security/role';
 import { CalibrationFixtures, UsageFixtures } from '../support/calibration-fixtures';
 import { RegisterFixtures } from '../support/fixtures';
 import { TestApp, createTestApp } from '../support/test-app';
@@ -38,7 +37,7 @@ describe('what an out of tolerance result reached', () => {
     await harness.reset();
   });
 
-  const http = () => request(harness.app.getHttpServer());
+  const http = () => harness.api(harness.tokenFor(Role.ADMIN));
 
   /** A gauge block set held as a reference standard. */
   async function standard(assetTag: string): Promise<Instrument> {

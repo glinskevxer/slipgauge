@@ -1,9 +1,8 @@
-import request from 'supertest';
-
 import { Verdict } from '@registry/calibration/conformity';
 import { Instrument } from '@registry/instrument/instrument.entity';
 import { IntervalBasis, IntervalDecision, IntervalService } from '@registry/interval';
 import { StandardRole } from '@registry/traceability';
+import { Role } from '@registry/security/role';
 import { RegisterFixtures } from '../support/fixtures';
 import { TestApp, createTestApp } from '../support/test-app';
 
@@ -27,7 +26,7 @@ describe('recording what the interval engine decided', () => {
     await register.micrometer('SG-500001');
   });
 
-  const http = () => request(harness.app.getHttpServer());
+  const http = () => harness.api(harness.tokenFor(Role.ADMIN));
 
   const OUTSIDE = {
     externalRef: 'NPL 2024/117',

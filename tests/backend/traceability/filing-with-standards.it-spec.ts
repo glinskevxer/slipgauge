@@ -1,7 +1,6 @@
-import request from 'supertest';
-
 import { CalibrationCertificate } from '@registry/calibration/calibration-certificate.entity';
 import { CertificateStandard, StandardRole } from '@registry/traceability';
+import { Role } from '@registry/security/role';
 import { CalibrationFixtures } from '../support/calibration-fixtures';
 import { RegisterFixtures } from '../support/fixtures';
 import { TestApp, createTestApp } from '../support/test-app';
@@ -26,7 +25,7 @@ describe('filing a sheet with its standards on it', () => {
     await register.micrometer('SG-400001');
   });
 
-  const http = () => request(harness.app.getHttpServer());
+  const http = () => harness.api(harness.tokenFor(Role.ADMIN));
 
   const OUTSIDE = {
     externalRef: 'NPL 2024/117',

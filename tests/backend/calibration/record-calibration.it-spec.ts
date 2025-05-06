@@ -1,7 +1,6 @@
-import request from 'supertest';
-
 import { AcceptancePolicy, Verdict } from '@registry/calibration/conformity';
 import { StandardRole } from '@registry/traceability';
+import { Role } from '@registry/security/role';
 import { RegisterFixtures } from '../support/fixtures';
 import { TestApp, createTestApp } from '../support/test-app';
 
@@ -23,7 +22,7 @@ describe('filing a calibration sheet', () => {
     await fixtures.micrometer('SG-200001');
   });
 
-  const http = () => request(harness.app.getHttpServer());
+  const http = () => harness.api(harness.tokenFor(Role.ADMIN));
 
   /** Every sheet needs a reference standard, so the default one is out here. */
   const OUTSIDE_STANDARD = {

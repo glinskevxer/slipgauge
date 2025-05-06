@@ -1,8 +1,7 @@
-import request from 'supertest';
-
 import { Instrument } from '@registry/instrument/instrument.entity';
 import { InstrumentStatus } from '@registry/instrument/instrument.enums';
 import { UsageService } from '@registry/usage/usage.service';
+import { Role } from '@registry/security/role';
 import { RegisterFixtures } from '../support/fixtures';
 import { TestApp, createTestApp } from '../support/test-app';
 
@@ -28,7 +27,7 @@ describe('logging what an instrument was used on', () => {
     await register.micrometer('SG-700001');
   });
 
-  const http = () => request(harness.app.getHttpServer());
+  const http = () => harness.api(harness.tokenFor(Role.ADMIN));
 
   function use(overrides: Record<string, unknown> = {}) {
     return {
