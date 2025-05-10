@@ -12,7 +12,6 @@ import { ImpactService } from './impact.service';
  * because an assessment somebody has to remember to start is one that gets
  * started a week late.
  */
-@RequireRoles(Role.AUDITOR)
 @Controller('impact')
 export class ImpactController {
   constructor(private readonly impact: ImpactService) {}

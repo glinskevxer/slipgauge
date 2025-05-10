@@ -12,6 +12,12 @@ export class SignInDto {
   password: string;
 }
 
+export class RefreshDto {
+  @IsString()
+  @MaxLength(4096)
+  refreshToken: string;
+}
+
 export class ChangePasswordDto {
   @IsString()
   @MaxLength(200)

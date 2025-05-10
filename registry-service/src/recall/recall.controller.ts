@@ -39,7 +39,6 @@ export function toIntervalSummary(decision: IntervalDecision): IntervalSummary {
   };
 }
 
-@RequireRoles(Role.AUDITOR)
 @Controller('recalls')
 export class RecallController {
   constructor(

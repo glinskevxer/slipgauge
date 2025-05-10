@@ -2,8 +2,6 @@ import { Controller, Get, Param, Query } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { Role } from '../security/role';
-import { RequireRoles } from '../security/roles.decorator';
 import { NotFoundError } from '../common/errors';
 import type { InstrumentClassView, StorageLocationView } from './dto/instrument.views';
 import { InstrumentClass } from './instrument-class.entity';
@@ -16,7 +14,6 @@ import { StorageLocationService } from './storage-location.service';
  * which is why they sit apart from the register endpoints rather than being
  * bolted onto them as extra query parameters.
  */
-@RequireRoles(Role.AUDITOR)
 @Controller('reference')
 export class ReferenceController {
   constructor(

@@ -12,7 +12,6 @@ import { RecordCalibrationDto } from './dto/record-calibration.dto';
  * There is deliberately no update route: a certificate is corrected by
  * withdrawing it and filing a replacement.
  */
-@RequireRoles(Role.AUDITOR)
 @Controller('certificates')
 export class CalibrationController {
   constructor(private readonly calibrations: CalibrationService) {}
@@ -54,7 +53,6 @@ export class CalibrationController {
 }
 
 /** History hangs off the instrument, because that is how anybody looks for it. */
-@RequireRoles(Role.AUDITOR)
 @Controller('instruments/:assetTag/certificates')
 export class CertificateHistoryController {
   constructor(private readonly calibrations: CalibrationService) {}

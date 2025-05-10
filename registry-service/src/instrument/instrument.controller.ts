@@ -21,7 +21,6 @@ import { UpdateInstrumentDto } from './dto/update-instrument.dto';
 import { InstrumentService } from './instrument.service';
 import { InstrumentStatus } from './instrument.enums';
 
-@RequireRoles(Role.AUDITOR)
 @Controller('instruments')
 export class InstrumentController {
   constructor(private readonly service: InstrumentService) {}

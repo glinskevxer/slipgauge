@@ -3,13 +3,9 @@ import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
 import { AuthenticationService } from './authentication.service';
 import { CurrentUser } from './current-user.decorator';
 import type { AccountView, TokenPair } from './dto/sign-in.dto';
-import { ChangePasswordDto, SignInDto } from './dto/sign-in.dto';
+import { ChangePasswordDto, RefreshDto, SignInDto } from './dto/sign-in.dto';
 import { Public } from './roles.decorator';
 import type { Principal } from './token.service';
-
-class RefreshDto {
-  refreshToken: string;
-}
 
 @Controller('auth')
 export class AuthenticationController {
@@ -26,7 +22,7 @@ export class AuthenticationController {
   @Post('refresh')
   @HttpCode(200)
   refresh(@Body() request: RefreshDto): Promise<TokenPair> {
-    return this.auth.refresh(request?.refreshToken ?? '');
+    return this.auth.refresh(request.refreshToken);
   }
 
   @Post('password')

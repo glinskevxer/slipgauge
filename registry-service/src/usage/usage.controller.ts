@@ -6,7 +6,6 @@ import type { Page } from '../common/page';
 import { LogUsageDto, UsageView } from './dto/log-usage.dto';
 import { UsageService } from './usage.service';
 
-@RequireRoles(Role.AUDITOR)
 @Controller('usage')
 export class UsageController {
   constructor(private readonly usage: UsageService) {}
