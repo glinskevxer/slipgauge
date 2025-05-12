@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AppUser } from './app-user.entity';
 import { AuditEvent } from './audit-event.entity';
+import { AccountsController, AuditController } from './accounts.controller';
 import { AuditTrail } from './audit-trail.service';
 import { AuthenticationController } from './authentication.controller';
 import { AuthenticationService } from './authentication.service';
@@ -18,7 +19,7 @@ import { TokenService } from './token.service';
  */
 @Module({
   imports: [TypeOrmModule.forFeature([AppUser, AuditEvent]), JwtModule.register({})],
-  controllers: [AuthenticationController],
+  controllers: [AuthenticationController, AccountsController, AuditController],
   providers: [
     AuthenticationService,
     TokenService,

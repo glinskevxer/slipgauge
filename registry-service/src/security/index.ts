@@ -1,5 +1,6 @@
 export { AppUser, LOCKOUT_MINUTES, MAX_FAILED_ATTEMPTS } from './app-user.entity';
 export { AuditEvent, AuditOutcome, auditEvent } from './audit-event.entity';
+export { AccountsController, AuditController } from './accounts.controller';
 export { AuditTrail } from './audit-trail.service';
 export { AuthenticationController } from './authentication.controller';
 export { AuthenticationService } from './authentication.service';

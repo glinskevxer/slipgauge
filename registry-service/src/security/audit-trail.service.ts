@@ -63,21 +63,24 @@ export class AuditTrail {
     sort?: string,
   ): Promise<Page<AuditEvent>> {
     const paging = AUDIT_SORT.paging(page, size);
-    const where: Record<string, string> = {};
+
+    // A query builder rather than findAndCount, because the sort whitelist
+    // hands back alias qualified column names and the finder wants entity
+    // property names. One of the two had to give and this is the one that can.
+    const builder = this.events
+      .createQueryBuilder('audit')
+      .skip(paging.skip)
+      .take(paging.take)
+      .orderBy(AUDIT_SORT.resolve(sort, 'audit'));
 
     if (actor) {
-      where['actor'] = actor;
+      builder.andWhere('audit.actor = :actor', { actor });
     }
     if (subject) {
-      where['subject'] = subject;
+      builder.andWhere('audit.subject = :subject', { subject });
     }
 
-    const [rows, total] = await this.events.findAndCount({
-      where,
-      order: AUDIT_SORT.resolve(sort, 'audit') as never,
-      skip: paging.skip,
-      take: paging.take,
-    });
+    const [rows, total] = await builder.getManyAndCount();
 
     return pageOf(rows, total, paging.page, paging.size, (row) => row);
   }

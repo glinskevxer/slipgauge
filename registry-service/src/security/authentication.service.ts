@@ -129,7 +129,7 @@ export class AuthenticationService {
       throw ConflictError.duplicate('account', request.username);
     }
     if (request.roles.length === 0) {
-      throw ConflictError.duplicate('role list', 'empty');
+      throw new ConflictError('an account needs at least one role');
     }
 
     const user = new AppUser();
@@ -146,18 +146,22 @@ export class AuthenticationService {
     user.roles = [...new Set(request.roles)];
 
     const saved = await this.users.save(user);
-    await this.writeRoles(saved.id, user.roles);
+
+    // save returns the same instance here, but spreading it into a literal
+    // would drop the prototype and with it every method toView calls.
+    saved.roles = user.roles;
+    await this.writeRoles(saved.id, saved.roles);
     await this.audit.allowed(actor, 'user.create', 'user', String(saved.id), request.username);
 
     this.log.log(`account ${request.username} created by ${actor}`);
-    return this.toView({ ...saved, roles: user.roles } as AppUser);
+    return this.toView(saved);
   }
 
   async setRoles(actor: string, userId: number, request: UpdateRolesDto): Promise<AccountView> {
     const user = await this.byId(userId);
 
     if (request.roles.length === 0) {
-      throw ConflictError.duplicate('role list', 'empty');
+      throw new ConflictError(`${user.username} would be left with no role at all`);
     }
 
     user.roles = [...new Set(request.roles)];
