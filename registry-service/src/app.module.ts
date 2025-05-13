@@ -6,12 +6,30 @@ import { DatabaseModule } from './database/database.module';
 import { ImpactModule } from './impact/impact.module';
 import { InstrumentModule } from './instrument/instrument.module';
 import { IntervalModule } from './interval/interval.module';
+import { ObservabilityModule } from './observability/observability.module';
 import { RecallModule } from './recall/recall.module';
 import { SecurityModule } from './security/security.module';
-import { UsageModule } from './usage/usage.module';
 import { TraceabilityModule } from './traceability/traceability.module';
+import { UsageModule } from './usage/usage.module';
 
+/**
+ * The whole service. The order here is the order the register was built in,
+ * which is also the order the rules depend on each other: an instrument before
+ * a certificate, a certificate before a chain, a chain before an interval.
+ */
 @Module({
-  imports: [ConfigModule, DatabaseModule, InstrumentModule, CalibrationModule, TraceabilityModule, IntervalModule, RecallModule, UsageModule, ImpactModule, SecurityModule],
+  imports: [
+    ConfigModule,
+    DatabaseModule,
+    ObservabilityModule,
+    SecurityModule,
+    InstrumentModule,
+    CalibrationModule,
+    TraceabilityModule,
+    IntervalModule,
+    RecallModule,
+    UsageModule,
+    ImpactModule,
+  ],
 })
 export class AppModule {}
