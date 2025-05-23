@@ -5,6 +5,7 @@ import { DataSource, EntityManager, IsNull } from 'typeorm';
 import { CalibrationCertificate } from '../calibration/calibration-certificate.entity';
 import { NotFoundError, RuleViolationError } from '../common/errors';
 import { Instrument } from '../instrument/instrument.entity';
+import { RegistryMetrics } from '../observability/registry-metrics.service';
 import { IntervalBasis, IntervalOutcome } from './interval-basis';
 import { IntervalDecision, addDays, intervalDecision } from './interval-decision.entity';
 import { IntervalEngine } from './interval.engine';
@@ -23,6 +24,7 @@ export class IntervalService {
   constructor(
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly engine: IntervalEngine,
+    private readonly metrics: RegistryMetrics,
   ) {}
 
   /**
@@ -67,6 +69,15 @@ export class IntervalService {
       );
 
     await this.applyToInstrument(manager, instrument, decision, effectiveFrom);
+
+    // With no decision behind it the comparison point is the class base,
+    // because that is what the instrument was actually running at. Reading
+    // the absent previous as "no change" hid every first cut from the metric.
+    const previous = decision.previousIntervalDays ?? instrument.instrumentClass.baseIntervalDays;
+
+    if (previous !== decision.intervalDays) {
+      this.metrics.intervalMoved(decision.basis, decision.intervalDays - previous);
+    }
 
     this.log.log(
       `${instrument.assetTag} interval ${decision.intervalDays} days, ` +

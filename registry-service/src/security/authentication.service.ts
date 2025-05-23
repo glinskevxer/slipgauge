@@ -6,6 +6,7 @@ import { compareSync, hashSync } from 'bcryptjs';
 
 import { ConflictError, ErrorCode, NotFoundError, RegistryException } from '../common/errors';
 import { Clock } from '../config/clock';
+import { RegistryMetrics } from '../observability/registry-metrics.service';
 import type { SecurityConfig } from '../config/security.config';
 import { AppUser } from './app-user.entity';
 import { AuditTrail } from './audit-trail.service';
@@ -47,6 +48,7 @@ export class AuthenticationService {
     private readonly dataSource: DataSource,
     private readonly tokens: TokenService,
     private readonly audit: AuditTrail,
+    private readonly metrics: RegistryMetrics,
     private readonly config: ConfigService,
     private readonly clock: Clock,
   ) {}
@@ -61,11 +63,13 @@ export class AuthenticationService {
 
     if (!user) {
       await this.audit.denied(request.username, 'auth.signIn', 'user', null, 'no such account');
+      this.metrics.signIn('denied');
       throw new SignInRefused();
     }
 
     if (!user.canSignIn(now)) {
       await this.audit.denied(user.username, 'auth.signIn', 'user', String(user.id), 'locked');
+      this.metrics.signIn('denied');
       throw new SignInRefused();
     }
 
@@ -79,12 +83,14 @@ export class AuthenticationService {
         String(user.id),
         `wrong password, attempt ${user.failedAttempts}`,
       );
+      this.metrics.signIn('denied');
       throw new SignInRefused();
     }
 
     user.recordSuccess(now);
     await this.users.save(user);
     await this.audit.allowed(user.username, 'auth.signIn', 'user', String(user.id));
+    this.metrics.signIn('allowed');
 
     return this.pairFor(user);
   }

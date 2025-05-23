@@ -6,6 +6,7 @@ import { CalibrationCertificate } from '../calibration/calibration-certificate.e
 import { failing } from '../calibration/conformity';
 import { NotFoundError } from '../common/errors';
 import { Clock } from '../config/clock';
+import { RegistryMetrics } from '../observability/registry-metrics.service';
 import type { CloseAssessmentDto, DisposeItemDto } from './dto/dispose-item.dto';
 import type { ImpactItemView, ImpactView } from './dto/impact.views';
 import { ImpactAnalyser } from './impact.analyser';
@@ -33,6 +34,7 @@ export class ImpactService {
     @InjectRepository(ImpactItem) private readonly items: Repository<ImpactItem>,
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly analyser: ImpactAnalyser,
+    private readonly metrics: RegistryMetrics,
     private readonly clock: Clock,
   ) {}
 
@@ -60,6 +62,7 @@ export class ImpactService {
     const assessment = await this.analyser.analyse(certificate, manager);
     const saved = await manager.getRepository(ImpactAssessment).save(assessment);
 
+    this.metrics.impactRaised(saved.severity);
     this.log.warn(
       `assessment ${saved.id} raised from ${certificate.certificateNumber}, ` +
         `severity ${saved.severity}`,

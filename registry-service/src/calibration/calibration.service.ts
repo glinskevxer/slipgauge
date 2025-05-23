@@ -5,6 +5,7 @@ import { DataSource, EntityManager, Repository } from 'typeorm';
 import { ConflictError, ErrorCode, NotFoundError, RuleViolationError } from '../common/errors';
 import { Clock } from '../config/clock';
 import { ImpactService } from '../impact/impact.service';
+import { RegistryMetrics } from '../observability/registry-metrics.service';
 import { Instrument } from '../instrument/instrument.entity';
 import { IntervalService } from '../interval/interval.service';
 import {
@@ -54,6 +55,7 @@ export class CalibrationService {
     private readonly traceability: TraceabilityValidator,
     private readonly intervals: IntervalService,
     private readonly impact: ImpactService,
+    private readonly metrics: RegistryMetrics,
     private readonly profiles: ToleranceProfileService,
     private readonly assessor: ConformityAssessor,
     private readonly mapper: CalibrationMapper,
@@ -126,6 +128,7 @@ export class CalibrationService {
       return written;
     });
 
+    this.metrics.certificateRecorded(saved.asFoundVerdict, saved.externalLab);
     this.log.log(
       `recorded certificate ${saved.certificateNumber} for ${instrument.assetTag} ` +
         `as found ${saved.asFoundVerdict} as left ${saved.asLeftVerdict}`,
@@ -277,6 +280,8 @@ export class CalibrationService {
       await manager.getRepository(CalibrationCertificate).save(certificate);
       return;
     }
+
+    this.metrics.traceabilityRefused(report.firstDefect()?.kind ?? 'UNKNOWN');
 
     throw new RuleViolationError(report.summarise(), ErrorCode.TRACEABILITY_BROKEN).with(
       'defects',
