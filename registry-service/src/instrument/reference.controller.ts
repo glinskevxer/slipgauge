@@ -1,5 +1,6 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Repository } from 'typeorm';
 
 import { NotFoundError } from '../common/errors';
@@ -14,6 +15,8 @@ import { StorageLocationService } from './storage-location.service';
  * which is why they sit apart from the register endpoints rather than being
  * bolted onto them as extra query parameters.
  */
+@ApiTags('instruments')
+@ApiBearerAuth('registry-token')
 @Controller('reference')
 export class ReferenceController {
   constructor(

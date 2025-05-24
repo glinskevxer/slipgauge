@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { Role } from '../security/role';
 import { RequireRoles } from '../security/roles.decorator';
@@ -12,6 +13,8 @@ import { ImpactService } from './impact.service';
  * because an assessment somebody has to remember to start is one that gets
  * started a week late.
  */
+@ApiTags('impact')
+@ApiBearerAuth('registry-token')
 @Controller('impact')
 export class ImpactController {
   constructor(private readonly impact: ImpactService) {}

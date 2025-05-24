@@ -9,6 +9,7 @@ import {
   Query,
   Res,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 
 import type { Page } from '../common/page';
@@ -21,6 +22,8 @@ import { UpdateInstrumentDto } from './dto/update-instrument.dto';
 import { InstrumentService } from './instrument.service';
 import { InstrumentStatus } from './instrument.enums';
 
+@ApiTags('instruments')
+@ApiBearerAuth('registry-token')
 @Controller('instruments')
 export class InstrumentController {
   constructor(private readonly service: InstrumentService) {}

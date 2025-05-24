@@ -8,6 +8,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import type { Page } from '../common/page';
 import { AuditTrail } from './audit-trail.service';
@@ -26,6 +27,8 @@ import type { Principal } from './token.service';
  * the first question asked after anything goes wrong.
  */
 @RequireRoles(Role.ADMIN)
+@ApiTags('accounts')
+@ApiBearerAuth('registry-token')
 @Controller('accounts')
 export class AccountsController {
   constructor(private readonly auth: AuthenticationService) {}
@@ -67,6 +70,8 @@ export class AccountsController {
  * administrators, because reading it is the whole job of an auditor.
  */
 @RequireRoles(Role.AUDITOR, Role.ADMIN)
+@ApiTags('accounts')
+@ApiBearerAuth('registry-token')
 @Controller('audit')
 export class AuditController {
   constructor(private readonly audit: AuditTrail) {}

@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { AuthenticationService } from './authentication.service';
 import { CurrentUser } from './current-user.decorator';
@@ -7,6 +8,8 @@ import { ChangePasswordDto, RefreshDto, SignInDto } from './dto/sign-in.dto';
 import { Public } from './roles.decorator';
 import type { Principal } from './token.service';
 
+@ApiTags('accounts')
+@ApiBearerAuth('registry-token')
 @Controller('auth')
 export class AuthenticationController {
   constructor(private readonly auth: AuthenticationService) {}

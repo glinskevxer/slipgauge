@@ -1,4 +1,5 @@
 import { Body, Controller, DefaultValuePipe, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { Role } from '../security/role';
 import { RequireRoles } from '../security/roles.decorator';
@@ -6,6 +7,8 @@ import type { Page } from '../common/page';
 import { LogUsageDto, UsageView } from './dto/log-usage.dto';
 import { UsageService } from './usage.service';
 
+@ApiTags('usage')
+@ApiBearerAuth('registry-token')
 @Controller('usage')
 export class UsageController {
   constructor(private readonly usage: UsageService) {}

@@ -16,6 +16,10 @@ export interface LabConfig {
   readonly assetTagPrefix: string;
   /** How many digits the numeric part of an asset tag carries. */
   readonly assetTagWidth: number;
+  /** Published on the API document rather than in a certificate. */
+  readonly version: string;
+  readonly website: string;
+  readonly contactEmail: string;
 }
 
 export const labConfig = registerAs('lab', (): LabConfig => {
@@ -31,5 +35,8 @@ export const labConfig = registerAs('lab', (): LabConfig => {
     timeZone: process.env['LAB_TIME_ZONE'] ?? 'Europe/London',
     assetTagPrefix: process.env['LAB_ASSET_TAG_PREFIX'] ?? 'SG',
     assetTagWidth: width,
+    version: process.env['LAB_API_VERSION'] ?? '1.0.0',
+    website: process.env['LAB_WEBSITE'] ?? 'https://slipgauge.internal',
+    contactEmail: process.env['LAB_CONTACT_EMAIL'] ?? 'quality@slipgauge.internal',
   };
 });

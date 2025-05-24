@@ -1,4 +1,5 @@
 import { Controller, DefaultValuePipe, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { Role } from '../security/role';
 import { RequireRoles } from '../security/roles.decorator';
@@ -39,6 +40,8 @@ export function toIntervalSummary(decision: IntervalDecision): IntervalSummary {
   };
 }
 
+@ApiTags('recalls')
+@ApiBearerAuth('registry-token')
 @Controller('recalls')
 export class RecallController {
   constructor(
