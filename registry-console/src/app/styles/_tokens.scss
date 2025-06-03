@@ -1,0 +1,101 @@
+// One place for every colour, spacing step and elevation the console uses.
+// The palette is deliberately low chroma; the only saturated colours left are
+// the four verdict states, so an out of tolerance row is impossible to miss.
+
+:root {
+  --sg-space-1: 0.25rem;
+  --sg-space-2: 0.5rem;
+  --sg-space-3: 0.75rem;
+  --sg-space-4: 1rem;
+  --sg-space-5: 1.5rem;
+  --sg-space-6: 2rem;
+  --sg-space-7: 3rem;
+
+  --sg-radius-sm: 3px;
+  --sg-radius-md: 6px;
+  --sg-radius-lg: 10px;
+
+  --sg-font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --sg-font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+
+  --sg-text-xs: 0.75rem;
+  --sg-text-sm: 0.8125rem;
+  --sg-text-md: 0.9375rem;
+  --sg-text-lg: 1.125rem;
+  --sg-text-xl: 1.5rem;
+
+  --sg-surface: #ffffff;
+  --sg-surface-sunken: #f4f5f7;
+  --sg-surface-raised: #ffffff;
+  --sg-border: #d8dce3;
+  --sg-border-strong: #b3bac5;
+  --sg-ink: #16181d;
+  --sg-ink-muted: #5d6470;
+  --sg-ink-faint: #8b929e;
+
+  --sg-accent: #2b5cab;
+  --sg-accent-soft: #e8eefa;
+
+  --sg-pass: #1f7a4d;
+  --sg-pass-soft: #e3f4ea;
+  --sg-marginal: #9a6b12;
+  --sg-marginal-soft: #fbf1dc;
+  --sg-fail: #ad2b2b;
+  --sg-fail-soft: #fae7e7;
+  --sg-quarantine: #6b3fa0;
+  --sg-quarantine-soft: #f0e9f9;
+
+  --sg-shadow-1: 0 1px 2px rgba(22, 24, 29, 0.08);
+  --sg-shadow-2: 0 4px 12px rgba(22, 24, 29, 0.1);
+}
+
+// The palette is defined three times on purpose. Bare :root is the light
+// default, the media block follows the machine, and the data attribute wins
+// over both so an explicit choice on a terminal actually sticks.
+@mixin dark-palette {
+    --sg-surface: #171a1f;
+    --sg-surface-sunken: #101216;
+    --sg-surface-raised: #1e222a;
+    --sg-border: #2c313a;
+    --sg-border-strong: #414855;
+    --sg-ink: #e7e9ee;
+    --sg-ink-muted: #a2a9b6;
+    --sg-ink-faint: #737b88;
+
+    --sg-accent: #7ba4e8;
+    --sg-accent-soft: #1c2739;
+
+    --sg-pass: #5fbf8c;
+    --sg-pass-soft: #16251d;
+    --sg-marginal: #d9ab4f;
+    --sg-marginal-soft: #2a2317;
+    --sg-fail: #e07777;
+    --sg-fail-soft: #2b1919;
+    --sg-quarantine: #b28ce0;
+    --sg-quarantine-soft: #221a2e;
+
+    --sg-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --sg-shadow-2: 0 4px 14px rgba(0, 0, 0, 0.55);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    @include dark-palette;
+  }
+}
+
+:root[data-theme='dark'] {
+  @include dark-palette;
+}
+
+// Compact turns the spacing scale down rather than restyling every component.
+:root.sg-compact {
+  --sg-space-1: 0.2rem;
+  --sg-space-2: 0.35rem;
+  --sg-space-3: 0.55rem;
+  --sg-space-4: 0.75rem;
+  --sg-space-5: 1.1rem;
+  --sg-space-6: 1.5rem;
+  --sg-text-sm: 0.78125rem;
+  --sg-text-md: 0.875rem;
+}

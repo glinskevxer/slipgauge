@@ -1,0 +1,22 @@
+# Normalise line endings on the way in. The repository holds shell scripts and
+# a Windows batch wrapper side by side, and a checkout on Windows was rewriting
+# the scripts to CRLF and breaking them.
+* text=auto eol=lf
+
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+*.ts   text
+*.html text diff=html
+*.scss text diff=css
+*.sql  text
+*.yml  text
+*.md   text diff=markdown
+
+*.png binary
+*.ico binary
+*.woff2 binary
+
+# Written by a tool, not by a person. Keeping these out of the language stats
+# and out of a diff by default is what the flags are for.
+package-lock.json linguist-generated=true -diff

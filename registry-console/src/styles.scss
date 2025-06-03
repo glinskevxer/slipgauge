@@ -1,0 +1,7 @@
+@use './app/styles/tokens' as tokens;
+@use './app/styles/base';
+@use './app/styles/controls';
+
+:root {
+  color-scheme: light dark;
+}

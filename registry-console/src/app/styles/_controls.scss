@@ -1,0 +1,228 @@
+// Buttons, chips, fields and tables.
+//
+// These started life inside each component's own stylesheet and were copied
+// from one to the next, which is how the register ended up with a button two
+// pixels shorter than the one on the recall board. They are global on purpose:
+// every one of them is a plain element with a plain class, and scoping them per
+// component bought nothing but the drift.
+
+.btn {
+  padding: var(--sg-space-2) var(--sg-space-3);
+  border: 1px solid var(--sg-border-strong);
+  border-radius: var(--sg-radius-sm);
+  background: var(--sg-surface);
+  color: var(--sg-ink);
+  font: inherit;
+  font-size: var(--sg-text-sm);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--sg-surface-sunken);
+  text-decoration: none;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn--primary {
+  background: var(--sg-accent);
+  border-color: var(--sg-accent);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--sg-accent);
+  filter: brightness(1.08);
+}
+
+.btn--danger {
+  border-color: var(--sg-fail);
+  color: var(--sg-fail);
+  font-weight: 600;
+}
+
+.btn--quiet {
+  border-color: transparent;
+  color: var(--sg-accent);
+}
+
+.btn--on {
+  border-color: var(--sg-accent);
+  color: var(--sg-accent);
+  font-weight: 600;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sg-space-1);
+  padding: 2px var(--sg-space-3);
+  border: 1px solid var(--sg-border-strong);
+  border-radius: 999px;
+  background: var(--sg-surface);
+  color: var(--sg-ink-muted);
+  font: inherit;
+  font-size: var(--sg-text-xs);
+  cursor: pointer;
+}
+
+.chip--on {
+  background: var(--sg-accent-soft);
+  border-color: var(--sg-accent);
+  color: var(--sg-accent);
+  font-weight: 600;
+}
+
+.chip__count {
+  opacity: 0.7;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sg-space-1);
+  color: var(--sg-ink-muted);
+  font-size: var(--sg-text-xs);
+}
+
+.field input,
+.field select,
+.field textarea {
+  padding: var(--sg-space-2);
+  border: 1px solid var(--sg-border-strong);
+  border-radius: var(--sg-radius-sm);
+  background: var(--sg-surface);
+  color: var(--sg-ink);
+  font: inherit;
+  font-size: var(--sg-text-sm);
+}
+
+.field__error {
+  color: var(--sg-fail);
+  font-size: var(--sg-text-xs);
+}
+
+/**
+ * Form layout. A row of fields that wrap, a field that grows, and the two
+ * widths that came up often enough to be worth naming. Six stylesheets had
+ * declared their own .field and four their own .row, all slightly different,
+ * which is why a form on one screen never quite lined up with the next.
+ */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sg-space-4);
+}
+
+.field {
+  flex: 1 1 11rem;
+  margin-bottom: var(--sg-space-3);
+}
+
+.field--wide {
+  flex-basis: 24rem;
+}
+
+.field--narrow {
+  flex-basis: 6rem;
+}
+
+.field input:disabled,
+.field select:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/** A fieldset styled as a card, which every form on the console uses. */
+.group {
+  margin: 0;
+  padding: var(--sg-space-4);
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-border);
+  border-radius: var(--sg-radius-lg);
+}
+
+.group legend {
+  padding: 0 var(--sg-space-2);
+  color: var(--sg-ink-muted);
+  font-size: var(--sg-text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/** A label a screen reader needs and nobody else should see. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.cell {
+  width: 100%;
+  padding: var(--sg-space-1);
+  border: 1px solid transparent;
+  border-radius: var(--sg-radius-sm);
+  background: var(--sg-surface-sunken);
+  color: var(--sg-ink);
+  font: inherit;
+  font-size: var(--sg-text-sm);
+}
+
+.cell:focus {
+  border-color: var(--sg-accent);
+  background: var(--sg-surface);
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--sg-space-2);
+  font-size: var(--sg-text-sm);
+}
+
+.mono {
+  font-family: var(--sg-font-mono);
+}
+
+.quiet {
+  color: var(--sg-ink-faint);
+  font-size: var(--sg-text-xs);
+}
+
+.panel {
+  padding: var(--sg-space-4);
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-border);
+  border-radius: var(--sg-radius-lg);
+}
+
+.data-table th,
+.data-table td {
+  padding: var(--sg-space-2) var(--sg-space-3);
+  text-align: left;
+  border-bottom: 1px solid var(--sg-border);
+  font-size: var(--sg-text-sm);
+}
+
+.data-table thead th {
+  font-size: var(--sg-text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sg-ink-muted);
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
