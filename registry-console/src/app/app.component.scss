@@ -1,0 +1,98 @@
+@use '../app/styles/tokens' as *;
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--surface-page);
+}
+
+.shell__bar {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0 1.25rem;
+  height: 3.25rem;
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--line-soft);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.shell__mark {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+  text-decoration: none;
+  color: inherit;
+}
+
+.shell__mark-name {
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.shell__mark-kind {
+  font-size: 0.7rem;
+  color: var(--ink-muted);
+  text-transform: lowercase;
+}
+
+.shell__nav {
+  display: flex;
+  gap: 0.25rem;
+  flex: 1 1 auto;
+  overflow-x: auto;
+}
+
+.shell__nav-link {
+  padding: 0.4rem 0.7rem;
+  border-radius: var(--radius-sm);
+  color: var(--ink-muted);
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    background: var(--surface-sunken);
+    color: var(--ink-strong);
+  }
+}
+
+.shell__nav-link--active {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.shell__who {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.shell__name {
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.shell__out {
+  border: 1px solid var(--line-soft);
+  background: transparent;
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.7rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--ink-strong);
+  cursor: pointer;
+  text-decoration: none;
+
+  &:hover {
+    background: var(--surface-sunken);
+  }
+}
+
+.shell__main {
+  flex: 1 1 auto;
+  padding: 1.25rem;
+}

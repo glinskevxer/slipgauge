@@ -1,0 +1,44 @@
+<section class="signin">
+  <form class="signin__card" (ngSubmit)="submit()">
+    <h1 class="signin__title">Slipgauge registry</h1>
+    <p class="signin__lead">Sign in with your laboratory account.</p>
+
+    <label class="signin__field">
+      Username
+      <input
+        name="username"
+        autocomplete="username"
+        autocapitalize="off"
+        spellcheck="false"
+        [ngModel]="username()"
+        (ngModelChange)="username.set($event)"
+        required
+      />
+    </label>
+
+    <label class="signin__field">
+      Password
+      <input
+        name="password"
+        type="password"
+        autocomplete="current-password"
+        [ngModel]="password()"
+        (ngModelChange)="password.set($event)"
+        required
+      />
+    </label>
+
+    @if (problem(); as message) {
+      <p class="signin__problem" role="alert">{{ message }}</p>
+    }
+
+    <button type="submit" class="signin__submit" [disabled]="busy()">
+      {{ busy() ? 'Signing in…' : 'Sign in' }}
+    </button>
+
+    <p class="signin__note">
+      Five wrong attempts hold the account for fifteen minutes. Ask the quality manager to
+      release it.
+    </p>
+  </form>
+</section>
