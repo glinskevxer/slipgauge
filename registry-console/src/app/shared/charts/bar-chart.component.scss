@@ -1,0 +1,65 @@
+.bars {
+  margin: 0;
+}
+
+.bars__caption {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--sg-space-2);
+  color: var(--sg-ink-muted);
+  font-size: var(--sg-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bars__total {
+  color: var(--sg-ink);
+  font-weight: 700;
+}
+
+.bars__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.bars__tick line {
+  stroke: var(--sg-border);
+}
+
+.bars__tick text {
+  fill: var(--sg-ink-faint);
+  font-family: var(--sg-font-mono);
+  font-size: 10px;
+}
+
+.bars__bar[data-tone='neutral'] {
+  fill: var(--sg-accent);
+}
+
+.bars__bar[data-tone='ok'] {
+  fill: var(--sg-pass);
+}
+
+.bars__bar[data-tone='warn'] {
+  fill: var(--sg-marginal);
+}
+
+.bars__bar[data-tone='bad'] {
+  fill: var(--sg-fail);
+}
+
+.bars__label {
+  fill: var(--sg-ink-muted);
+  font-family: var(--sg-font-sans);
+  font-size: 10px;
+}
+
+.bars__empty {
+  margin: 0;
+  padding: var(--sg-space-6);
+  text-align: center;
+  color: var(--sg-ink-muted);
+  background: var(--sg-surface-sunken);
+  border-radius: var(--sg-radius-md);
+}

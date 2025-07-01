@@ -1,0 +1,60 @@
+<figure class="bars">
+  @if (caption()) {
+    <figcaption class="bars__caption">
+      {{ caption() }}
+      <span class="bars__total">{{ total() }}{{ valueSuffix() }}</span>
+    </figcaption>
+  }
+
+  @if (hasData()) {
+    <svg
+      class="bars__svg"
+      [attr.viewBox]="'0 0 ' + width() + ' ' + height"
+      [attr.aria-label]="caption()"
+      role="img"
+      preserveAspectRatio="xMidYMid meet"
+    >
+      @for (tick of ticks(); track tick.value) {
+        <g class="bars__tick">
+          <line
+            [attr.x1]="margin.left"
+            [attr.x2]="width() - margin.right"
+            [attr.y1]="tick.y"
+            [attr.y2]="tick.y"
+          />
+          <text [attr.x]="margin.left - 8" [attr.y]="tick.y + 4" text-anchor="end">
+            {{ tick.value }}
+          </text>
+        </g>
+      }
+
+      @for (bar of bars(); track bar.label; let i = $index) {
+        <g>
+          <rect
+            class="bars__bar"
+            [attr.data-tone]="toneOf(bar)"
+            [attr.x]="bar.x"
+            [attr.y]="bar.y"
+            [attr.width]="bar.width"
+            [attr.height]="bar.height"
+            rx="2"
+          >
+            <title>{{ bar.label }}: {{ bar.value }}{{ valueSuffix() }}</title>
+          </rect>
+          @if (showLabel(i)) {
+            <text
+              class="bars__label"
+              [attr.x]="bar.x + bar.width / 2"
+              [attr.y]="height - margin.bottom + 16"
+              text-anchor="middle"
+            >
+              {{ bar.label }}
+            </text>
+          }
+        </g>
+      }
+    </svg>
+  } @else {
+    <p class="bars__empty">Nothing to plot.</p>
+  }
+</figure>

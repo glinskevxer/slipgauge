@@ -1,0 +1,70 @@
+<figure class="chart">
+  <figcaption class="chart__caption">
+    {{ caption() }}
+    @if (trend(); as direction) {
+      <span class="chart__trend" [attr.data-trend]="direction">{{ direction }}</span>
+    }
+  </figcaption>
+
+  @if (hasData()) {
+    <svg
+      class="chart__svg"
+      [attr.viewBox]="'0 0 ' + width + ' ' + height"
+      role="img"
+      [attr.aria-label]="caption()"
+      preserveAspectRatio="xMidYMid meet"
+    >
+      <rect
+        class="chart__plot"
+        [attr.x]="margin.left"
+        [attr.y]="margin.top"
+        [attr.width]="plotWidth"
+        [attr.height]="plotHeight"
+      />
+
+      @for (tick of yTicks(); track tick.value) {
+        <g class="chart__tick">
+          <line
+            [attr.x1]="margin.left"
+            [attr.x2]="margin.left + plotWidth"
+            [attr.y1]="tick.y"
+            [attr.y2]="tick.y"
+          />
+          <text [attr.x]="margin.left - 8" [attr.y]="tick.y + 4" text-anchor="end">
+            {{ format(tick.value) }}
+          </text>
+        </g>
+      }
+
+      @for (limit of limitLines(); track limit.value) {
+        <line
+          class="chart__limit"
+          [class.chart__limit--nominal]="limit.value === 0"
+          [attr.x1]="margin.left"
+          [attr.x2]="margin.left + plotWidth"
+          [attr.y1]="limit.y"
+          [attr.y2]="limit.y"
+        />
+      }
+
+      <path class="chart__line" [attr.d]="path()" fill="none" />
+
+      @for (point of points(); track point.certificateNumber) {
+        <circle
+          class="chart__point"
+          [attr.data-tone]="point.tone"
+          [attr.cx]="point.x"
+          [attr.cy]="point.y"
+          r="4"
+        >
+          <title>
+            {{ point.certificateNumber }} on {{ point.performedOn }}: {{ format(point.normalised) }}
+            of tolerance
+          </title>
+        </circle>
+      }
+    </svg>
+  } @else {
+    <p class="chart__empty">No as found readings to plot yet.</p>
+  }
+</figure>

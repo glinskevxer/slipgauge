@@ -1,0 +1,48 @@
+<figure class="donut">
+  @if (caption()) {
+    <figcaption class="donut__caption">{{ caption() }}</figcaption>
+  }
+
+  @if (hasData()) {
+    <div class="donut__body">
+      <svg
+        [attr.viewBox]="'0 0 ' + size + ' ' + size"
+        [attr.width]="size"
+        [attr.height]="size"
+        role="img"
+        [attr.aria-label]="caption()"
+      >
+        @for (slice of laidOut(); track slice.label) {
+          <path class="donut__slice" [attr.data-tone]="slice.tone" [attr.d]="slice.path">
+            <title>{{ slice.label }}: {{ slice.value }} ({{ percent(slice.share) }})</title>
+          </path>
+        }
+        <text class="donut__total" [attr.x]="size / 2" [attr.y]="size / 2" text-anchor="middle">
+          {{ total() }}
+        </text>
+        @if (centreLabel()) {
+          <text
+            class="donut__centre"
+            [attr.x]="size / 2"
+            [attr.y]="size / 2 + 16"
+            text-anchor="middle"
+          >
+            {{ centreLabel() }}
+          </text>
+        }
+      </svg>
+
+      <ul class="donut__key">
+        @for (slice of laidOut(); track slice.label) {
+          <li>
+            <span class="donut__swatch" [attr.data-tone]="slice.tone"></span>
+            {{ slice.label }}
+            <span class="donut__value">{{ slice.value }}</span>
+          </li>
+        }
+      </ul>
+    </div>
+  } @else {
+    <p class="donut__empty">Nothing recorded yet.</p>
+  }
+</figure>
