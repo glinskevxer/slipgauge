@@ -1,0 +1,64 @@
+@if (open()) {
+  <button type="button" class="scrim" aria-label="Close the command palette" (click)="close()">
+  </button>
+
+  <div class="palette" role="dialog" aria-label="Command palette" aria-modal="true">
+    <input
+      #box
+      class="palette__box"
+      type="text"
+      placeholder="Type a command, or an asset tag to jump to it"
+      autocomplete="off"
+      spellcheck="false"
+      name="palette"
+      [ngModel]="term()"
+      (ngModelChange)="onTerm($event)"
+    />
+
+    @if (tagJump(); as tag) {
+      <button type="button" class="jump" (click)="run()">
+        <span class="jump__label">Jump to</span>
+        <span class="jump__tag mono">{{ tag }}</span>
+        @if (jumping()) {
+          <span class="jump__busy">looking…</span>
+        }
+      </button>
+    }
+
+    @if (nothingFound()) {
+      <p class="palette__empty">Nothing matches that.</p>
+    }
+
+    <ul class="results">
+      @for (match of matches(); track match.command.id; let index = $index) {
+        <li>
+          <button
+            type="button"
+            class="result"
+            [class.result--on]="index === cursor()"
+            (click)="go(match.command)"
+            (mousemove)="cursor.set(index)"
+          >
+            <span class="result__title">
+              @for (part of highlighted(match); track $index) {
+                <span [class.result__hit]="part.hit">{{ part.text }}</span>
+              }
+            </span>
+            @if (match.command.hint) {
+              <span class="result__hint">{{ match.command.hint }}</span>
+            }
+            @if (match.command.shortcut) {
+              <kbd class="result__key">{{ match.command.shortcut }}</kbd>
+            }
+          </button>
+        </li>
+      }
+    </ul>
+
+    <footer class="palette__foot">
+      <kbd>↑</kbd><kbd>↓</kbd> to move
+      <kbd>enter</kbd> to go
+      <kbd>esc</kbd> to close
+    </footer>
+  </div>
+}
