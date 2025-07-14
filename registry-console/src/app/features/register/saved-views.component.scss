@@ -1,0 +1,46 @@
+.saved {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sg-space-2);
+}
+
+.saved__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sg-space-1);
+}
+
+.saved__forget {
+  margin-left: var(--sg-space-1);
+  opacity: 0.5;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.saved__forget:hover {
+  opacity: 1;
+  color: var(--sg-fail);
+}
+
+.saved__namer {
+  display: flex;
+  align-items: center;
+  gap: var(--sg-space-2);
+}
+
+.saved__namer input {
+  width: 18rem;
+  padding: var(--sg-space-1) var(--sg-space-2);
+  border: 1px solid var(--sg-border-strong);
+  border-radius: var(--sg-radius-sm);
+  background: var(--sg-surface);
+  color: var(--sg-ink);
+  font: inherit;
+  font-size: var(--sg-text-sm);
+}
+
+.saved__showing {
+  color: var(--sg-ink-muted);
+  font-size: var(--sg-text-sm);
+}

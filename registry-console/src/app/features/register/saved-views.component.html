@@ -1,0 +1,46 @@
+<div class="saved">
+  @if (anything()) {
+    <div class="saved__list">
+      @for (entry of shown(); track entry.id) {
+        <button
+          type="button"
+          class="chip"
+          [class.chip--on]="isOpen(entry)"
+          [title]="describe(entry)"
+          (click)="open(entry)"
+        >
+          {{ entry.name }}
+          <span
+            class="saved__forget"
+            role="button"
+            tabindex="0"
+            aria-label="Forget this view"
+            (click)="forget(entry, $event)"
+            (keydown.enter)="forget(entry, $event)"
+            >×</span
+          >
+        </button>
+      }
+    </div>
+  }
+
+  @if (naming()) {
+    <form class="saved__namer" (ngSubmit)="keep()">
+      <input
+        name="viewName"
+        placeholder="Call it something you will recognise"
+        maxlength="40"
+        [ngModel]="name()"
+        (ngModelChange)="name.set($event)"
+      />
+      <button type="submit" class="btn btn--primary" [disabled]="!canSave()">Keep it</button>
+      <button type="button" class="btn btn--quiet" (click)="cancelNaming()">Cancel</button>
+    </form>
+  } @else if (matching()) {
+    <span class="saved__showing">Showing {{ matching()?.name }}</span>
+  } @else {
+    <button type="button" class="btn btn--quiet" (click)="startNaming()">
+      Keep this view
+    </button>
+  }
+</div>

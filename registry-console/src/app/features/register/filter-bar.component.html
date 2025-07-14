@@ -1,0 +1,145 @@
+<form class="filters" (ngSubmit)="apply()">
+  <div class="filters__row">
+    <label class="filters__search">
+      <span class="sr-only">Search the register</span>
+      <input
+        type="search"
+        name="text"
+        placeholder="Asset tag, maker, model or serial"
+        [ngModel]="text()"
+        (ngModelChange)="text.set($event)"
+      />
+    </label>
+
+    <button type="submit" class="btn btn--primary" [disabled]="busy() || dateRangeInvalid()">
+      Search
+    </button>
+    <button type="button" class="btn" (click)="toggleExpanded()" [attr.aria-expanded]="expanded()">
+      {{ expanded() ? 'Fewer filters' : 'More filters' }}
+    </button>
+    <button type="button" class="btn" (click)="clear()">Reset</button>
+  </div>
+
+  @if (expanded()) {
+    <div class="filters__panel">
+      <fieldset class="filters__group">
+        <legend>Status</legend>
+        <div class="chips">
+          @for (status of statuses; track status) {
+            <button
+              type="button"
+              class="chip"
+              [class.chip--on]="chosenStatuses().has(status)"
+              (click)="toggleStatus(status)"
+            >
+              {{ statusLabelFor(status) }}
+            </button>
+          }
+        </div>
+      </fieldset>
+
+      <fieldset class="filters__group">
+        <legend>Discipline</legend>
+        <div class="chips">
+          @for (discipline of disciplines; track discipline) {
+            <button
+              type="button"
+              class="chip"
+              [class.chip--on]="chosenDisciplines().has(discipline)"
+              (click)="toggleDiscipline(discipline)"
+            >
+              {{ discipline }}
+            </button>
+          }
+        </div>
+      </fieldset>
+
+      <fieldset class="filters__group">
+        <legend>Criticality</legend>
+        <div class="chips">
+          @for (criticality of criticalities; track criticality) {
+            <button
+              type="button"
+              class="chip"
+              [class.chip--on]="chosenCriticalities().has(criticality)"
+              (click)="toggleCriticality(criticality)"
+            >
+              {{ criticality }}
+            </button>
+          }
+        </div>
+      </fieldset>
+
+      <div class="filters__group filters__group--inline">
+        <label>
+          Class
+          <select name="classCode" [ngModel]="classCode()" (ngModelChange)="classCode.set($event)">
+            <option value="">Any</option>
+            @for (type of classes(); track type.code) {
+              <option [value]="type.code">{{ type.code }} — {{ type.name }}</option>
+            }
+          </select>
+        </label>
+
+        <label>
+          Location
+          <select
+            name="locationCode"
+            [ngModel]="locationCode()"
+            (ngModelChange)="locationCode.set($event)"
+          >
+            <option value="">Anywhere</option>
+            @for (location of locations(); track location.code) {
+              <option [value]="location.code">{{ location.path.join(' / ') }}</option>
+            }
+          </select>
+        </label>
+
+        <label>
+          Acquired from
+          <input
+            type="date"
+            name="acquiredFrom"
+            [ngModel]="acquiredFrom()"
+            (ngModelChange)="acquiredFrom.set($event)"
+          />
+        </label>
+
+        <label>
+          Acquired to
+          <input
+            type="date"
+            name="acquiredTo"
+            [ngModel]="acquiredTo()"
+            (ngModelChange)="acquiredTo.set($event)"
+          />
+        </label>
+      </div>
+
+      <div class="filters__group filters__group--inline">
+        <label class="filters__toggle">
+          <input
+            type="checkbox"
+            name="referenceOnly"
+            [ngModel]="referenceOnly()"
+            (ngModelChange)="referenceOnly.set($event)"
+          />
+          Reference standards only
+        </label>
+        <label class="filters__toggle">
+          <input
+            type="checkbox"
+            name="includeRetired"
+            [ngModel]="includeRetired()"
+            (ngModelChange)="includeRetired.set($event)"
+          />
+          Include retired
+        </label>
+      </div>
+
+      @if (dateRangeInvalid()) {
+        <p class="filters__error" role="alert">The acquired from date sits after the to date.</p>
+      }
+    </div>
+  }
+</form>
