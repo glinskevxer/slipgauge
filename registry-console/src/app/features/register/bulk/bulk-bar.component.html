@@ -1,0 +1,97 @@
+<div class="bulk" role="region" aria-label="Bulk actions">
+  <span class="bulk__count">{{ selection().length }} selected</span>
+
+  <div class="bulk__actions">
+    <button
+      type="button"
+      class="btn"
+      [class.btn--on]="action() === 'STATUS'"
+      (click)="choose('STATUS')"
+    >
+      Change status
+    </button>
+    <button
+      type="button"
+      class="btn"
+      [class.btn--on]="action() === 'CUSTODIAN'"
+      (click)="choose('CUSTODIAN')"
+    >
+      Reassign custodian
+    </button>
+    <button type="button" class="btn" (click)="exportSelection()">Export</button>
+    <button type="button" class="btn btn--quiet" (click)="cleared.emit()">Clear</button>
+  </div>
+
+  @if (action() === 'STATUS') {
+    <div class="bulk__form">
+      <label>
+        Move to
+        <select
+          name="targetStatus"
+          [ngModel]="targetStatus()"
+          (ngModelChange)="targetStatus.set($event)"
+        >
+          <option value="">Choose a status</option>
+          @for (status of reachable(); track status) {
+            <option [value]="status">{{ statusLabel(status) }}</option>
+          }
+        </select>
+      </label>
+    </div>
+  }
+
+  @if (action() === 'CUSTODIAN') {
+    <div class="bulk__form">
+      <label>
+        New custodian
+        <input
+          name="custodian"
+          [ngModel]="custodian()"
+          (ngModelChange)="custodian.set($event)"
+        />
+      </label>
+    </div>
+  }
+
+  @if (plan(); as planned) {
+    <div class="bulk__plan">
+      <p class="bulk__eligible">
+        {{ planned.eligible.length }} will change.
+        @if (planned.blocked.length > 0) {
+          {{ planned.blocked.length }} will be skipped.
+        }
+      </p>
+
+      @if (planned.blocked.length > 0) {
+        <ul class="bulk__blocked">
+          @for (row of planned.blocked; track row.instrument.id) {
+            <li>
+              <span class="mono">{{ row.instrument.assetTag }}</span>
+              {{ row.reason }}
+            </li>
+          }
+        </ul>
+      }
+
+      <button
+        type="button"
+        class="btn btn--primary"
+        [disabled]="!ready() || running()"
+        (click)="apply()"
+      >
+        {{ running() ? 'Applying…' : 'Apply to ' + planned.eligible.length }}
+      </button>
+    </div>
+  }
+
+  @if (outcome(); as result) {
+    <div class="bulk__outcome" [class.bulk__outcome--bad]="result.failed.length > 0">
+      <p>{{ summary() }}</p>
+      @for (group of failureGroups(); track group.message) {
+        <p class="bulk__failure">
+          {{ group.assetTags.length }} refused: {{ group.message }}
+        </p>
+      }
+    </div>
+  }
+</div>
