@@ -1,0 +1,149 @@
+<section class="booking">
+  <header class="booking__head">
+    <h1>Book an instrument in</h1>
+    <p class="booking__lead">
+      The asset tag is allocated when the record is saved. Everything else has to match the
+      plate on the instrument.
+    </p>
+  </header>
+
+  <form class="booking__form" [formGroup]="form" (ngSubmit)="submit()">
+    <fieldset class="group">
+      <legend>What it is</legend>
+
+      <label class="field">
+        Class
+        <select formControlName="classCode">
+          <option value="">Choose a class</option>
+          @for (type of classes(); track type.code) {
+            <option [value]="type.code">{{ type.code }} — {{ type.name }}</option>
+          }
+        </select>
+        @if (messageFor('classCode'); as message) {
+          <span class="field__error">{{ message }}</span>
+        }
+      </label>
+
+      @if (chosenClass(); as type) {
+        <p class="hint">
+          {{ type.discipline }}, {{ type.criticality }}. Recalled every
+          {{ type.baseIntervalDays }} days to start with, never outside
+          {{ type.minIntervalDays }} to {{ type.maxIntervalDays }} days.
+        </p>
+      }
+
+      <div class="row">
+        <label class="field">
+          Manufacturer
+          <input formControlName="manufacturer" autocomplete="off" />
+          @if (messageFor('manufacturer'); as message) {
+            <span class="field__error">{{ message }}</span>
+          }
+        </label>
+
+        <label class="field">
+          Model
+          <input formControlName="model" autocomplete="off" />
+          @if (messageFor('model'); as message) {
+            <span class="field__error">{{ message }}</span>
+          }
+        </label>
+
+        <label class="field">
+          Serial number
+          <input formControlName="serialNumber" autocomplete="off" class="mono" />
+          @if (messageFor('serialNumber'); as message) {
+            <span class="field__error">{{ message }}</span>
+          }
+        </label>
+      </div>
+
+      <label class="field">
+        Description
+        <input formControlName="description" autocomplete="off" />
+      </label>
+    </fieldset>
+
+    <fieldset class="group">
+      <legend>What it measures</legend>
+
+      <div class="row">
+        <label class="field">
+          Unit
+          <input formControlName="unit" placeholder="mm, V, g" class="mono" />
+          @if (messageFor('unit'); as message) {
+            <span class="field__error">{{ message }}</span>
+          }
+        </label>
+
+        <label class="field">
+          Range low
+          <input type="number" step="any" formControlName="rangeLow" class="mono" />
+        </label>
+
+        <label class="field">
+          Range high
+          <input type="number" step="any" formControlName="rangeHigh" class="mono" />
+        </label>
+
+        <label class="field">
+          Resolution
+          <input type="number" step="any" formControlName="resolution" class="mono" />
+        </label>
+      </div>
+
+      @if (groupMessage; as message) {
+        <p class="group__error" role="alert">{{ message }}</p>
+      }
+    </fieldset>
+
+    <fieldset class="group">
+      <legend>Where it lives</legend>
+
+      <div class="row">
+        <label class="field">
+          Location
+          <select formControlName="locationCode">
+            <option value="">Unplaced</option>
+            @for (location of locations(); track location.code) {
+              <option [value]="location.code">{{ location.path.join(' / ') }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="field">
+          Custodian
+          <input formControlName="custodian" autocomplete="off" />
+        </label>
+
+        <label class="field">
+          Acquired on
+          <input type="date" formControlName="acquiredOn" />
+          @if (messageFor('acquiredOn'); as message) {
+            <span class="field__error">{{ message }}</span>
+          }
+        </label>
+      </div>
+
+      <label class="toggle">
+        <input type="checkbox" formControlName="referenceStandard" />
+        This instrument is used as a reference standard
+      </label>
+      <p class="hint">
+        A reference standard carries traceability into every calibration it signs off, and a
+        failure on one cascades to everything it touched.
+      </p>
+    </fieldset>
+
+    @if (serverProblem(); as problem) {
+      <p class="booking__error" role="alert">{{ problem.message }}</p>
+    }
+
+    <footer class="booking__actions">
+      <button type="button" class="btn" (click)="reset()">Clear</button>
+      <button type="submit" class="btn btn--primary" [disabled]="saving()">
+        {{ saving() ? 'Saving…' : 'Book in' }}
+      </button>
+    </footer>
+  </form>
+</section>

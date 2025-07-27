@@ -1,0 +1,60 @@
+<div class="points">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Nominal</th>
+        <th>As found</th>
+        <th>Error</th>
+        <th class="points__band">Position in band</th>
+        <th>Tolerance</th>
+        <th>U (k={{ rows()[0]?.point?.coverageFactor ?? 2 }})</th>
+        <th>Ratio</th>
+        <th>Verdict</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of rows(); track row.point.id) {
+        <tr [class.points__row--outside]="row.outside">
+          <td class="mono">{{ row.point.sequenceNo }}</td>
+          <td class="mono">{{ row.point.nominal }} {{ row.point.unit }}</td>
+          <td class="mono">{{ row.point.asFound ?? '—' }}</td>
+          <td class="mono">
+            {{ row.point.asFoundError === null ? '—' : (row.point.asFoundError | number: '1.0-6') }}
+          </td>
+          <td>
+            <div class="band" [attr.aria-label]="'position ' + (row.position ?? 0)">
+              <span class="band__track"></span>
+              <span class="band__nominal"></span>
+              @if (row.position !== null) {
+                <span
+                  class="band__marker"
+                  [class.band__marker--outside]="row.outside"
+                  [style.left.%]="row.markerPercent"
+                ></span>
+              }
+            </div>
+          </td>
+          <td class="mono points__tolerance">
+            {{ row.point.toleranceLow | number: '1.0-6' }} to
+            {{ row.point.toleranceHigh | number: '1.0-6' }}
+          </td>
+          <td class="mono">{{ row.point.expandedUncertainty | number: '1.0-8' }}</td>
+          <td class="mono" [attr.data-tone]="row.ratioTone">{{ formatRatio(row.ratio) }}</td>
+          <td><sg-verdict-badge [verdict]="row.point.asFoundVerdict" /></td>
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  <p class="points__note">
+    @if (anyOutside()) {
+      At least one reading fell outside the permitted band.
+    } @else if (worstRatio() !== null && worstRatio()! < 4) {
+      Every reading was inside tolerance, but the worst test uncertainty ratio was
+      {{ formatRatio(worstRatio()) }}, so a guard band was applied.
+    } @else {
+      Every reading was inside tolerance with a healthy uncertainty ratio.
+    }
+  </p>
+</div>

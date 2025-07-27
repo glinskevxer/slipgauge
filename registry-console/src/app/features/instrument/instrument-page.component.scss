@@ -1,0 +1,206 @@
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sg-space-4);
+}
+
+.detail__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sg-space-5);
+  padding: var(--sg-space-4);
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-border);
+  border-radius: var(--sg-radius-lg);
+}
+
+.detail__back {
+  font-size: var(--sg-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.detail__tag {
+  margin: var(--sg-space-1) 0 0;
+  font-family: var(--sg-font-mono);
+  font-size: var(--sg-text-xl);
+}
+
+.detail__what {
+  margin: var(--sg-space-1) 0 0;
+  color: var(--sg-ink-muted);
+}
+
+.detail__serial {
+  margin-left: var(--sg-space-2);
+  font-family: var(--sg-font-mono);
+  font-size: var(--sg-text-sm);
+}
+
+.detail__state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--sg-space-2);
+}
+
+.detail__ref {
+  padding: 1px var(--sg-space-2);
+  border-radius: var(--sg-radius-sm);
+  background: var(--sg-accent-soft);
+  color: var(--sg-accent);
+  font-size: var(--sg-text-xs);
+  font-weight: 600;
+}
+
+.detail__alarm {
+  max-width: 16rem;
+  text-align: right;
+  color: var(--sg-fail);
+  font-size: var(--sg-text-sm);
+  font-weight: 600;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: var(--sg-space-3) var(--sg-space-5);
+  margin: 0;
+  padding: var(--sg-space-4);
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-border);
+  border-radius: var(--sg-radius-lg);
+}
+
+.facts dt {
+  color: var(--sg-ink-muted);
+  font-size: var(--sg-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.facts dd {
+  margin: 2px 0 0;
+  font-size: var(--sg-text-sm);
+}
+
+.tabs {
+  display: flex;
+  gap: var(--sg-space-1);
+  border-bottom: 1px solid var(--sg-border);
+}
+
+.tabs__tab {
+  padding: var(--sg-space-2) var(--sg-space-4);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--sg-ink-muted);
+  font: inherit;
+  font-size: var(--sg-text-sm);
+  cursor: pointer;
+}
+
+.tabs__tab--on {
+  border-bottom-color: var(--sg-accent);
+  color: var(--sg-accent);
+  font-weight: 600;
+}
+
+.tabs__flag {
+  display: inline-block;
+  min-width: 1.1rem;
+  margin-left: var(--sg-space-1);
+  padding: 0 var(--sg-space-1);
+  border-radius: 999px;
+  background: var(--sg-fail-soft);
+  color: var(--sg-fail);
+  font-size: var(--sg-text-xs);
+  font-weight: 700;
+  text-align: center;
+}
+
+.panel {
+  padding: var(--sg-space-4);
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-border);
+  border-radius: var(--sg-radius-lg);
+}
+
+.panel__lead {
+  margin: 0 0 var(--sg-space-4);
+}
+
+.panel__subhead {
+  margin: var(--sg-space-5) 0 var(--sg-space-2);
+  font-size: var(--sg-text-md);
+}
+
+.panel__empty {
+  margin: 0;
+  color: var(--sg-ink-muted);
+}
+
+th,
+td {
+  padding: var(--sg-space-2) var(--sg-space-3);
+  text-align: left;
+  border-bottom: 1px solid var(--sg-border);
+  font-size: var(--sg-text-sm);
+}
+
+thead th {
+  font-size: var(--sg-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sg-ink-muted);
+}
+
+.timeline {
+  margin: 0 0 var(--sg-space-4);
+  padding: 0;
+  list-style: none;
+}
+
+.timeline__row {
+  display: grid;
+  grid-template-columns: 7rem 4rem 3.5rem 1fr;
+  gap: var(--sg-space-3);
+  padding: var(--sg-space-2) 0;
+  border-bottom: 1px dashed var(--sg-border);
+  font-size: var(--sg-text-sm);
+}
+
+.timeline__row--current {
+  font-weight: 600;
+}
+
+.timeline__days {
+  font-family: var(--sg-font-mono);
+}
+
+.timeline__delta--up {
+  color: var(--sg-pass);
+}
+
+.timeline__delta--down {
+  color: var(--sg-fail);
+}
+
+.timeline__why {
+  color: var(--sg-ink-muted);
+}
+
+.detail__error {
+  padding: var(--sg-space-4);
+  background: var(--sg-fail-soft);
+  border: 1px solid var(--sg-fail);
+  border-radius: var(--sg-radius-md);
+  color: var(--sg-fail);
+}
+
+.detail__loading {
+  color: var(--sg-ink-muted);
+}
+

@@ -1,0 +1,58 @@
+<figure class="chain">
+  <figcaption class="chain__caption">
+    Traceability
+    <span class="chain__summary" [class.chain__summary--bad]="faults().length > 0">
+      {{ summary() }}
+    </span>
+    <span class="chain__size">{{ size() }} nodes</span>
+  </figcaption>
+
+  <div class="chain__scroll">
+    <svg
+      [attr.viewBox]="'0 0 ' + width() + ' ' + height()"
+      [attr.width]="width()"
+      [attr.height]="height()"
+      role="img"
+      aria-label="Traceability chain"
+    >
+      @for (entry of laidOut(); track entry.node.label + entry.x + entry.y) {
+        @if (entry.parentX !== null) {
+          <path class="chain__link" [attr.d]="connector(entry)" fill="none" />
+        }
+      }
+
+      @for (entry of laidOut(); track entry.node.label + entry.x + entry.y) {
+        <g [attr.transform]="'translate(' + entry.x + ',' + entry.y + ')'">
+          <rect
+            class="chain__box"
+            [attr.data-tone]="tone(entry.node)"
+            [attr.width]="nodeWidth"
+            [attr.height]="nodeHeight"
+            rx="6"
+          />
+          <text class="chain__title" x="10" y="20">{{ entry.node.label }}</text>
+          @if (entry.node.assetTag) {
+            <text class="chain__tag" x="10" y="36">{{ entry.node.assetTag }}</text>
+          }
+          @if (entry.node.performedOn) {
+            <text class="chain__when" x="10" y="52">{{ entry.node.performedOn }}</text>
+          }
+          @if (entry.node.note) {
+            <title>{{ entry.node.note }}</title>
+          }
+        </g>
+      }
+    </svg>
+  </div>
+
+  @if (faults().length > 0) {
+    <ul class="chain__faults">
+      @for (fault of faults(); track fault.label) {
+        <li>
+          <strong>{{ fault.assetTag ?? fault.label }}</strong>
+          {{ fault.note ?? 'is not usable in this chain' }}
+        </li>
+      }
+    </ul>
+  }
+</figure>

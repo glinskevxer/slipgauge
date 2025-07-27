@@ -1,0 +1,188 @@
+@if (store.detail(); as instrument) {
+  <article class="detail">
+    <header class="detail__head">
+      <div class="detail__identity">
+        <a class="detail__back" routerLink="/register">Register</a>
+        <h1 class="detail__tag">{{ instrument.assetTag }}</h1>
+        <p class="detail__what">
+          {{ instrument.manufacturer }} {{ instrument.model }}
+          <span class="detail__serial">serial {{ instrument.serialNumber }}</span>
+        </p>
+      </div>
+
+      <div class="detail__state">
+        <sg-status-badge [status]="instrument.status" />
+        @if (instrument.referenceStandard) {
+          <span class="detail__ref">Reference standard</span>
+        }
+        @if (store.hasFailedRecently()) {
+          <span class="detail__alarm">Found out of tolerance at its last calibration</span>
+        }
+      </div>
+    </header>
+
+    <dl class="facts">
+      <div><dt>Class</dt><dd>{{ instrument.classCode }} — {{ instrument.className }}</dd></div>
+      <div><dt>Discipline</dt><dd>{{ instrument.discipline }}</dd></div>
+      <div><dt>Criticality</dt><dd>{{ instrument.criticality }}</dd></div>
+      <div>
+        <dt>Range</dt>
+        <dd>{{ instrument.rangeLow }} to {{ instrument.rangeHigh }} {{ instrument.unit }}</dd>
+      </div>
+      <div><dt>Resolution</dt><dd>{{ instrument.resolution }} {{ instrument.unit }}</dd></div>
+      <div><dt>Location</dt><dd>{{ instrument.locationPath.join(' / ') || 'Unplaced' }}</dd></div>
+      <div><dt>Custodian</dt><dd>{{ instrument.custodian ?? 'Unassigned' }}</dd></div>
+      <div><dt>Acquired</dt><dd>{{ instrument.acquiredOn | date: 'd MMM y' }}</dd></div>
+    </dl>
+
+    <nav class="tabs" aria-label="Instrument sections">
+      @for (entry of tabs; track entry.key) {
+        <button
+          type="button"
+          class="tabs__tab"
+          [class.tabs__tab--on]="tab() === entry.key"
+          (click)="select(entry.key)"
+        >
+          {{ entry.label }}
+          @if (entry.key === 'traceability' && store.chainFaultCount() > 0) {
+            <span class="tabs__flag">{{ store.chainFaultCount() }}</span>
+          }
+        </button>
+      }
+    </nav>
+
+    @switch (tab()) {
+      @case ('history') {
+        <section class="panel">
+          @if (store.history().length === 0) {
+            <p class="panel__empty">This instrument has never been calibrated.</p>
+          } @else {
+            <sg-drift-chart [history]="store.historyForward()" />
+
+            @if (store.latest(); as latest) {
+              <h2 class="panel__subhead">
+                Latest certificate {{ latest.certificateNumber }}
+              </h2>
+              <sg-point-table [points]="latest.points" [unit]="instrument.unit" />
+            }
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Certificate</th>
+                  <th>Performed</th>
+                  <th>By</th>
+                  <th>Lab</th>
+                  <th>As found</th>
+                  <th>As left</th>
+                  <th>Adjusted</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (certificate of store.history(); track certificate.id) {
+                  <tr>
+                    <td class="mono">{{ certificate.certificateNumber }}</td>
+                    <td>{{ certificate.performedOn | date: 'd MMM y' }}</td>
+                    <td>{{ certificate.performedBy }}</td>
+                    <td>{{ certificate.issuingLab }}</td>
+                    <td><sg-verdict-badge [verdict]="certificate.asFoundVerdict" /></td>
+                    <td><sg-verdict-badge [verdict]="certificate.asLeftVerdict" /></td>
+                    <td>{{ certificate.adjusted ? 'Yes' : 'No' }}</td>
+                    <td>
+                      <a
+                        class="btn btn--quiet"
+                        [routerLink]="['/certificates', certificate.id, 'print']"
+                        >Print</a
+                      >
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </section>
+      }
+
+      @case ('interval') {
+        <section class="panel">
+          @if (store.currentInterval(); as current) {
+            <p class="panel__lead">
+              Running at <strong>{{ current.intervalDays }} days</strong>, {{ current.rationale }}.
+            </p>
+          } @else {
+            <p class="panel__empty">No interval decision has been recorded yet.</p>
+          }
+
+          <ol class="timeline">
+            @for (decision of store.decisions(); track decision.id) {
+              <li class="timeline__row" [class.timeline__row--current]="decision.current">
+                <span class="timeline__when">{{ decision.effectiveFrom | date: 'd MMM y' }}</span>
+                <span class="timeline__days">{{ decision.intervalDays }} d</span>
+                <span
+                  class="timeline__delta"
+                  [class.timeline__delta--up]="decision.delta > 0"
+                  [class.timeline__delta--down]="decision.delta < 0"
+                >
+                  {{ decision.delta > 0 ? '+' : '' }}{{ decision.delta || '—' }}
+                </span>
+                <span class="timeline__why">{{ decision.rationale }}</span>
+              </li>
+            }
+          </ol>
+
+          <button type="button" class="btn" (click)="store.reassess()">
+            Recompute the interval
+          </button>
+        </section>
+      }
+
+      @case ('traceability') {
+        <section class="panel">
+          @if (store.chain(); as chain) {
+            <sg-chain-tree [root]="chain" />
+          } @else {
+            <p class="panel__empty">
+              No chain to show. This instrument has no live certificate yet, or the chain
+              could not be read.
+            </p>
+          }
+        </section>
+      }
+
+      @case ('usage') {
+        <section class="panel">
+          <sg-usage-panel
+            [instrumentId]="instrument.id"
+            [assetTag]="instrument.assetTag"
+            [usable]="instrument.status === 'IN_SERVICE' || instrument.status === 'ON_LOAN'"
+          />
+        </section>
+      }
+
+      @case ('details') {
+        <section class="panel">
+          <p class="panel__lead">{{ instrument.description ?? 'No description recorded.' }}</p>
+          <dl class="facts">
+            <div><dt>Class base interval</dt><dd>{{ instrument.baseIntervalDays }} days</dd></div>
+            <div><dt>Class floor</dt><dd>{{ instrument.minIntervalDays }} days</dd></div>
+            <div><dt>Class ceiling</dt><dd>{{ instrument.maxIntervalDays }} days</dd></div>
+            <div><dt>Record created</dt><dd>{{ instrument.createdAt | date: 'medium' }}</dd></div>
+            <div><dt>Last edited</dt><dd>{{ instrument.updatedAt | date: 'medium' }}</dd></div>
+            <div><dt>Row version</dt><dd class="mono">{{ instrument.version }}</dd></div>
+          </dl>
+
+          <h2 class="panel__subhead">Edit</h2>
+          <sg-edit-panel [instrument]="instrument" (saved)="store.load(instrument.id)" />
+
+          <h2 class="panel__subhead">Status</h2>
+          <sg-status-actions [instrument]="instrument" (moved)="store.load(instrument.id)" />
+        </section>
+      }
+    }
+  </article>
+} @else if (store.error()) {
+  <p class="detail__error" role="alert">{{ store.error()?.message }}</p>
+} @else {
+  <p class="detail__loading">Loading the instrument…</p>
+}

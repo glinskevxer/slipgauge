@@ -1,0 +1,123 @@
+<section class="register">
+  <header class="register__header">
+    <div>
+      <h1>Instrument register</h1>
+      <p class="register__count">{{ store.summary() }}</p>
+    </div>
+
+    <div class="register__actions">
+      @if (store.filterCount() > 0) {
+        <button type="button" class="btn" (click)="store.clearFilters()">
+          Clear {{ store.filterCount() }} filter{{ store.filterCount() === 1 ? '' : 's' }}
+        </button>
+      }
+      <a class="btn btn--primary" routerLink="/register/new">Book an instrument in</a>
+      @if (store.selectionCount() > 0) {
+        <span class="register__selection">{{ store.selectionCount() }} selected</span>
+      }
+    </div>
+  </header>
+
+  <sg-saved-views [current]="store.currentView()" (chosen)="openSavedView($event)" />
+
+  <sg-filter-bar
+    [applied]="store.query()"
+    [busy]="store.loading()"
+    (search)="store.applyQuery($event)"
+    (cleared)="store.clearFilters()"
+  />
+
+  @if (store.selectionCount() > 0) {
+    <sg-bulk-bar
+      [selection]="store.selectedRows()"
+      (applied)="store.load(store.page().page)"
+      (cleared)="store.clearSelection()"
+    />
+  }
+
+  @if (store.error(); as failure) {
+    <div class="register__error" role="alert">
+      <strong>{{ failure.message }}</strong>
+      @if (failure.isRetryable) {
+        <button type="button" class="btn" (click)="store.load(store.page().page)">Try again</button>
+      }
+    </div>
+  }
+
+  <div class="register__grid" [class.register__grid--busy]="store.loading()">
+    <table>
+      <thead>
+        <tr>
+          <th class="tick">
+            <input
+              type="checkbox"
+              [checked]="store.allOnPageSelected()"
+              (change)="store.toggleAllOnPage()"
+              aria-label="Select every row on this page"
+            />
+          </th>
+          @for (column of columns; track column.key) {
+            <th [attr.aria-sort]="store.directionFor(column.key) ?? 'none'">
+              @if (column.sortable) {
+                <button type="button" class="th-sort" (click)="store.sortBy(column.key)">
+                  {{ column.label }}<span class="th-sort__mark">{{ sortIndicator(column.key) }}</span>
+                </button>
+              } @else {
+                {{ column.label }}
+              }
+            </th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of store.rows(); track row.id) {
+          <tr [class.row--reference]="row.referenceStandard">
+            <td class="tick">
+              <input
+                type="checkbox"
+                [checked]="store.selected().has(row.id)"
+                (change)="store.toggleSelection(row.id)"
+                [attr.aria-label]="'Select ' + row.assetTag"
+              />
+            </td>
+            <td class="mono">
+              <a [routerLink]="['/register', row.id]">{{ row.assetTag }}</a>
+              @if (row.referenceStandard) {
+                <span class="ref" title="Used as a reference standard">STD</span>
+              }
+            </td>
+            <td>{{ row.manufacturer }}</td>
+            <td>{{ row.model }}</td>
+            <td class="mono">{{ row.serialNumber }}</td>
+            <td class="mono">{{ row.classCode }}</td>
+            <td>{{ row.discipline }}</td>
+            <td><sg-status-badge [status]="row.status" /></td>
+            <td class="mono">{{ row.locationCode ?? '—' }}</td>
+            <td>{{ row.custodian ?? '—' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    @if (store.isEmpty()) {
+      <sg-empty-state
+        headline="Nothing in the register matches"
+        detail="Widen the filters, or check whether the instrument was retired."
+        [actionLabel]="store.filterCount() > 0 ? 'Clear the filters' : null"
+        (action)="store.clearFilters()"
+      />
+    }
+  </div>
+
+  <footer class="register__pager">
+    <button type="button" class="btn" [disabled]="store.page().first" (click)="store.previous()">
+      Previous
+    </button>
+    <span class="register__pager-position">
+      Page {{ store.page().page + 1 }} of {{ store.page().totalPages || 1 }}
+    </span>
+    <button type="button" class="btn" [disabled]="store.page().last" (click)="store.next()">
+      Next
+    </button>
+  </footer>
+</section>

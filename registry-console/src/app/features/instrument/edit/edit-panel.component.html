@@ -1,0 +1,133 @@
+<form class="edit" (ngSubmit)="save()">
+  @if (!mayEdit()) {
+    <p class="edit__blocked">
+      Your role can read this record but not change it. A metrologist or an administrator can.
+    </p>
+  }
+
+  <div class="row">
+    <label class="field field--wide">
+      Description
+      <input
+        name="description"
+        [disabled]="!mayEdit()"
+        [ngModel]="draft().description"
+        (ngModelChange)="change({ description: $event })"
+      />
+      @if (messageFor('description'); as message) {
+        <span class="field__error">{{ message }}</span>
+      }
+    </label>
+  </div>
+
+  <div class="row">
+    <label class="field">
+      Range low
+      <input
+        type="number"
+        step="any"
+        class="mono"
+        name="rangeLow"
+        [disabled]="!mayEdit()"
+        [ngModel]="draft().rangeLow"
+        (ngModelChange)="change({ rangeLow: $event })"
+      />
+    </label>
+    <label class="field">
+      Range high
+      <input
+        type="number"
+        step="any"
+        class="mono"
+        name="rangeHigh"
+        [disabled]="!mayEdit()"
+        [ngModel]="draft().rangeHigh"
+        (ngModelChange)="change({ rangeHigh: $event })"
+      />
+    </label>
+    <label class="field">
+      Resolution
+      <input
+        type="number"
+        step="any"
+        class="mono"
+        name="resolution"
+        [disabled]="!mayEdit()"
+        [ngModel]="draft().resolution"
+        (ngModelChange)="change({ resolution: $event })"
+      />
+      @if (messageFor('resolution'); as message) {
+        <span class="field__error">{{ message }}</span>
+      }
+    </label>
+  </div>
+
+  @if (messageFor('span'); as message) {
+    <p class="edit__error" role="alert">{{ message }}</p>
+  }
+
+  <div class="row">
+    <label class="field">
+      Location
+      <select
+        name="locationCode"
+        [disabled]="!mayEdit()"
+        [ngModel]="draft().locationCode"
+        (ngModelChange)="change({ locationCode: $event })"
+      >
+        <option value="">Unplaced</option>
+        @for (location of locations(); track location.code) {
+          <option [value]="location.code">{{ location.path.join(' / ') }}</option>
+        }
+      </select>
+    </label>
+    <label class="field">
+      Custodian
+      <input
+        name="custodian"
+        [disabled]="!mayEdit()"
+        [ngModel]="draft().custodian"
+        (ngModelChange)="change({ custodian: $event })"
+      />
+    </label>
+  </div>
+
+  <label class="toggle">
+    <input
+      type="checkbox"
+      name="referenceStandard"
+      [disabled]="!mayEdit()"
+      [ngModel]="draft().referenceStandard"
+      (ngModelChange)="change({ referenceStandard: $event })"
+    />
+    Used as a reference standard
+  </label>
+
+  @if (consequences().length > 0) {
+    <ul class="edit__consequences">
+      @for (warning of consequences(); track warning) {
+        <li>{{ warning }}</li>
+      }
+    </ul>
+  }
+
+  <footer class="edit__actions">
+    @if (changes().length > 0) {
+      <span class="edit__changes">Changing {{ changes().join(', ') }}</span>
+    } @else {
+      <span class="edit__changes edit__changes--quiet">Nothing changed yet</span>
+    }
+    <button type="button" class="btn" [disabled]="changes().length === 0" (click)="revert()">
+      Put it back
+    </button>
+    <button type="submit" class="btn btn--primary" [disabled]="!canSave()">
+      {{ saving() ? 'Saving…' : 'Save' }}
+    </button>
+  </footer>
+
+  <p class="edit__note">
+    The maker, the model and the serial number identify the physical instrument, so they cannot
+    be edited. Correcting one of those means retiring this record and booking the instrument in
+    again.
+  </p>
+</form>

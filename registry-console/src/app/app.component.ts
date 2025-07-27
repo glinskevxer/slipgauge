@@ -27,6 +27,7 @@ export class AppComponent {
 
   protected readonly navigation = signal<readonly NavEntry[]>([
     { path: '/overview', label: 'Overview', hint: 'What is coming and what is on fire' },
+    { path: '/register', label: 'Register', hint: 'Every instrument the lab holds' },
   ]);
 
   protected signOut(): void {

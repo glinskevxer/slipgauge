@@ -1,0 +1,99 @@
+<div class="usage">
+  @if (usable()) {
+    <form class="log" (ngSubmit)="submit()">
+      <div class="row">
+        <label class="field">
+          Used on
+          <input
+            type="date"
+            name="usedOn"
+            [ngModel]="usedOn()"
+            (ngModelChange)="usedOn.set($event)"
+          />
+        </label>
+        <label class="field">
+          Used by
+          <input name="usedBy" [ngModel]="usedBy()" (ngModelChange)="usedBy.set($event)" />
+        </label>
+        <label class="field">
+          Work order
+          <input
+            class="mono"
+            name="workOrder"
+            [ngModel]="workOrder()"
+            (ngModelChange)="workOrder.set($event)"
+          />
+        </label>
+        <label class="field">
+          Customer
+          <input name="customer" [ngModel]="customer()" (ngModelChange)="customer.set($event)" />
+        </label>
+        <label class="field field--narrow">
+          Readings
+          <input
+            type="number"
+            min="1"
+            name="readingCount"
+            [ngModel]="readingCount()"
+            (ngModelChange)="readingCount.set($event)"
+          />
+        </label>
+        <button type="submit" class="btn btn--primary" [disabled]="!canSubmit()">
+          {{ saving() ? 'Saving…' : 'Record a use' }}
+        </button>
+      </div>
+
+      <label class="field field--wide">
+        What it was used for
+        <input name="purpose" [ngModel]="purpose()" (ngModelChange)="purpose.set($event)" />
+      </label>
+
+      @if (wouldBeUntraceable()) {
+        <p class="warn">
+          Without a work order or a customer this use cannot be chased if the instrument
+          later turns out to have been reading wrong.
+        </p>
+      }
+    </form>
+  } @else {
+    <p class="blocked">
+      This instrument is not in a state where it may be used, so nothing can be logged
+      against it.
+    </p>
+  }
+
+  <div class="totals">
+    <span><strong>{{ uses().length }}</strong> uses</span>
+    <span><strong>{{ readings() }}</strong> readings</span>
+    @if (span(); as window) {
+      <span>{{ window[0] }} to {{ window[1] }}</span>
+    }
+    @if (untraceableCount() > 0) {
+      <span class="totals__gap">{{ untraceableCount() }} with nothing to chase</span>
+    }
+  </div>
+
+  @for (group of grouped(); track group.workOrder) {
+    <section class="group">
+      <h3 class="group__head">
+        <span class="mono">{{ group.workOrder }}</span>
+        <span class="group__count">{{ group.readings }} readings</span>
+      </h3>
+      <ul class="group__list">
+        @for (use of group.uses; track use.id) {
+          <li class="use">
+            <span class="use__when">{{ use.usedOn | date: 'd MMM y' }}</span>
+            <span class="use__who">{{ use.usedBy }}</span>
+            <span class="use__what">{{ use.purpose ?? '—' }}</span>
+            <span class="use__customer">{{ use.customer ?? '—' }}</span>
+            <span class="use__count">{{ use.readingCount }}</span>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  @if (!loading() && uses().length === 0) {
+    <p class="blocked">Nothing has been logged against this instrument yet.</p>
+  }
+</div>

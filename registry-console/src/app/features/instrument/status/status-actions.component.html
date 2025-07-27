@@ -1,0 +1,63 @@
+<div class="actions">
+  @if (moves().length === 0) {
+    <p class="actions__none">
+      This instrument is retired. Its record stays for the audit trail, but nothing more can
+      happen to it.
+    </p>
+  } @else {
+    <div class="actions__row">
+      <span class="actions__label">Move it to</span>
+      @for (move of moves(); track move.target) {
+        <button
+          type="button"
+          class="btn"
+          [class.btn--on]="chosen()?.target === move.target"
+          [class.btn--danger]="move.severe"
+          [disabled]="!mayMove()"
+          (click)="choose(move)"
+        >
+          {{ move.label }}
+        </button>
+      }
+    </div>
+
+    @if (!mayMove()) {
+      <p class="actions__blocked">Your role can read this record but not move it.</p>
+    }
+  }
+
+  @if (chosen(); as move) {
+    <div class="confirm" [class.confirm--severe]="move.severe">
+      <p class="confirm__what">{{ confirmation() }}</p>
+
+      @if (move.needsReason) {
+        <label class="field">
+          Reason, which stays on the record
+          <input
+            name="reason"
+            placeholder="What happened, in a sentence"
+            [ngModel]="reason()"
+            (ngModelChange)="reason.set($event)"
+          />
+          @if (reason().trim().length > 0 && !canGo()) {
+            <span class="field__error">A reason needs at least eight characters.</span>
+          }
+        </label>
+      }
+
+      <div class="confirm__actions">
+        <button type="button" class="btn" (click)="cancel()">Leave it alone</button>
+        <button
+          type="button"
+          class="btn"
+          [class.btn--danger]="move.severe"
+          [class.btn--primary]="!move.severe"
+          [disabled]="!canGo()"
+          (click)="go()"
+        >
+          {{ working() ? 'Working…' : 'Move it to ' + move.label.toLowerCase() }}
+        </button>
+      </div>
+    </div>
+  }
+</div>

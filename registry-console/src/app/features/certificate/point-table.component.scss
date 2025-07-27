@@ -1,0 +1,85 @@
+.points {
+  overflow-x: auto;
+}
+
+th,
+td {
+  padding: var(--sg-space-2) var(--sg-space-3);
+  text-align: left;
+  border-bottom: 1px solid var(--sg-border);
+  font-size: var(--sg-text-sm);
+  white-space: nowrap;
+}
+
+thead th {
+  font-size: var(--sg-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sg-ink-muted);
+}
+
+.points__row--outside {
+  background: var(--sg-fail-soft);
+}
+
+.points__band {
+  width: 9rem;
+}
+
+.points__tolerance {
+  color: var(--sg-ink-muted);
+}
+
+[data-tone='warn'] {
+  color: var(--sg-marginal);
+  font-weight: 600;
+}
+
+[data-tone='bad'] {
+  color: var(--sg-fail);
+  font-weight: 700;
+}
+
+.band {
+  position: relative;
+  width: 8rem;
+  height: 14px;
+}
+
+.band__track {
+  position: absolute;
+  inset: 5px 0;
+  border-radius: 2px;
+  background: var(--sg-pass-soft);
+  border: 1px solid var(--sg-pass);
+}
+
+.band__nominal {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 50%;
+  width: 1px;
+  background: var(--sg-border-strong);
+}
+
+.band__marker {
+  position: absolute;
+  top: 1px;
+  width: 3px;
+  height: 12px;
+  margin-left: -1.5px;
+  border-radius: 1px;
+  background: var(--sg-accent);
+}
+
+.band__marker--outside {
+  background: var(--sg-fail);
+  width: 4px;
+}
+
+.points__note {
+  margin: var(--sg-space-3) 0 0;
+  color: var(--sg-ink-muted);
+  font-size: var(--sg-text-sm);
+}

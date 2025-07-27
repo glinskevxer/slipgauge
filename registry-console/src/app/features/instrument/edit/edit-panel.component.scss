@@ -1,0 +1,54 @@
+.edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sg-space-3);
+}
+
+.edit__blocked {
+  margin: 0;
+  padding: var(--sg-space-3);
+  background: var(--sg-surface-sunken);
+  border-radius: var(--sg-radius-md);
+  color: var(--sg-ink-muted);
+  font-size: var(--sg-text-sm);
+}
+
+.edit__error {
+  margin: 0;
+  color: var(--sg-fail);
+  font-size: var(--sg-text-sm);
+}
+
+.edit__consequences {
+  margin: 0;
+  padding: var(--sg-space-3) var(--sg-space-3) var(--sg-space-3) var(--sg-space-6);
+  background: var(--sg-marginal-soft);
+  border: 1px solid var(--sg-marginal);
+  border-radius: var(--sg-radius-md);
+  color: var(--sg-marginal);
+  font-size: var(--sg-text-sm);
+}
+
+.edit__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sg-space-3);
+}
+
+.edit__changes {
+  margin-right: auto;
+  color: var(--sg-accent);
+  font-size: var(--sg-text-sm);
+  font-weight: 600;
+}
+
+.edit__changes--quiet {
+  color: var(--sg-ink-faint);
+  font-weight: 400;
+}
+
+.edit__note {
+  margin: 0;
+  color: var(--sg-ink-faint);
+  font-size: var(--sg-text-xs);
+}
