@@ -1,0 +1,420 @@
+<section class="sheet">
+  <header class="sheet__head">
+    <h1>Enter a calibration sheet</h1>
+    <p class="sheet__lead">
+      Tolerance limits and verdicts are worked out by the registry from the instrument's own
+      profile. You give it the readings and the uncertainty.
+    </p>
+  </header>
+
+  <nav class="steps" aria-label="Sheet sections">
+    @for (entry of steps; track entry) {
+      <button
+        type="button"
+        class="steps__step"
+        [class.steps__step--on]="step() === entry"
+        (click)="go(entry)"
+      >
+        <span class="steps__label">{{ stepLabels[entry] }}</span>
+        @if (problemCount(entry) > 0) {
+          <span class="steps__count">{{ problemCount(entry) }}</span>
+        }
+      </button>
+    }
+  </nav>
+
+  <div class="panel">
+    @switch (step()) {
+      @case ('header') {
+        <div class="row">
+          <label class="field">
+            Certificate number
+            <input
+              class="mono"
+              [ngModel]="draft().certificateNumber"
+              (ngModelChange)="patch({ certificateNumber: $event })"
+              name="certificateNumber"
+            />
+          </label>
+          <label class="field">
+            Instrument asset tag
+            <input
+              class="mono"
+              [ngModel]="draft().assetTag"
+              (ngModelChange)="patch({ assetTag: $event })"
+              name="assetTag"
+            />
+          </label>
+        </div>
+
+        <div class="row">
+          <label class="field">
+            Performed on
+            <input
+              type="date"
+              [ngModel]="draft().performedOn"
+              (ngModelChange)="patch({ performedOn: $event })"
+              name="performedOn"
+            />
+          </label>
+          <label class="field">
+            Issued on
+            <input
+              type="date"
+              [ngModel]="draft().issuedOn"
+              (ngModelChange)="patch({ issuedOn: $event })"
+              name="issuedOn"
+            />
+          </label>
+          <label class="field">
+            Performed by
+            <input
+              [ngModel]="draft().performedBy"
+              (ngModelChange)="patch({ performedBy: $event })"
+              name="performedBy"
+            />
+          </label>
+          <label class="field">
+            Issuing laboratory
+            <input
+              [ngModel]="draft().issuingLab"
+              (ngModelChange)="patch({ issuingLab: $event })"
+              name="issuingLab"
+            />
+          </label>
+        </div>
+
+        <div class="row">
+          <label class="field">
+            Acceptance policy
+            <select
+              [ngModel]="draft().acceptancePolicy"
+              (ngModelChange)="patch({ acceptancePolicy: $event })"
+              name="acceptancePolicy"
+            >
+              @for (policy of policies; track policy.value) {
+                <option [value]="policy.value">{{ policy.label }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            Ambient temperature, °C
+            <input
+              type="number"
+              step="any"
+              [ngModel]="draft().ambientTemperature"
+              (ngModelChange)="patch({ ambientTemperature: $event })"
+              name="ambientTemperature"
+            />
+          </label>
+          <label class="field">
+            Relative humidity, %
+            <input
+              type="number"
+              step="any"
+              [ngModel]="draft().ambientHumidity"
+              (ngModelChange)="patch({ ambientHumidity: $event })"
+              name="ambientHumidity"
+            />
+          </label>
+        </div>
+
+        <label class="toggle">
+          <input
+            type="checkbox"
+            [ngModel]="draft().externalLab"
+            (ngModelChange)="patch({ externalLab: $event })"
+            name="externalLab"
+          />
+          This work was done by an outside laboratory
+        </label>
+        <label class="toggle">
+          <input
+            type="checkbox"
+            [ngModel]="draft().adjusted"
+            (ngModelChange)="patch({ adjusted: $event })"
+            name="adjusted"
+          />
+          The instrument was adjusted during this calibration
+        </label>
+      }
+
+      @case ('standards') {
+        @for (entry of draft().standards; track entry.key) {
+          <article class="standard">
+            <div class="row">
+              <label class="field">
+                Source
+                <select
+                  [ngModel]="entry.source"
+                  (ngModelChange)="updateStandard(entry.key, { source: $event })"
+                  [name]="'source-' + entry.key"
+                >
+                  <option value="internal">In this register</option>
+                  <option value="external">Outside laboratory</option>
+                </select>
+              </label>
+
+              <label class="field">
+                Role
+                <select
+                  [ngModel]="entry.role"
+                  (ngModelChange)="updateStandard(entry.key, { role: $event })"
+                  [name]="'role-' + entry.key"
+                >
+                  @for (role of roles; track role) {
+                    <option [value]="role">{{ role }}</option>
+                  }
+                </select>
+              </label>
+
+              @if (entry.source === 'internal') {
+                <label class="field">
+                  Asset tag
+                  <input
+                    class="mono"
+                    [ngModel]="entry.assetTag"
+                    (ngModelChange)="updateStandard(entry.key, { assetTag: $event })"
+                    [name]="'tag-' + entry.key"
+                  />
+                </label>
+              } @else {
+                <label class="field field--wide">
+                  Outside reference
+                  <input
+                    [ngModel]="entry.externalRef"
+                    (ngModelChange)="updateStandard(entry.key, { externalRef: $event })"
+                    [name]="'ref-' + entry.key"
+                  />
+                </label>
+              }
+
+              <button
+                type="button"
+                class="btn btn--quiet"
+                (click)="removeStandard(entry.key)"
+                aria-label="Remove this standard"
+              >
+                Remove
+              </button>
+            </div>
+
+            @if (entry.source === 'external') {
+              <div class="row">
+                <label class="field">
+                  Laboratory
+                  <input
+                    [ngModel]="entry.externalLab"
+                    (ngModelChange)="updateStandard(entry.key, { externalLab: $event })"
+                    [name]="'lab-' + entry.key"
+                  />
+                </label>
+                <label class="field">
+                  Their certificate number
+                  <input
+                    class="mono"
+                    [ngModel]="entry.externalCertificateNumber"
+                    (ngModelChange)="
+                      updateStandard(entry.key, { externalCertificateNumber: $event })
+                    "
+                    [name]="'cert-' + entry.key"
+                  />
+                </label>
+                <label class="field">
+                  Valid from
+                  <input
+                    type="date"
+                    [ngModel]="entry.externalValidFrom"
+                    (ngModelChange)="updateStandard(entry.key, { externalValidFrom: $event })"
+                    [name]="'from-' + entry.key"
+                  />
+                </label>
+                <label class="field">
+                  Valid to
+                  <input
+                    type="date"
+                    [ngModel]="entry.externalValidTo"
+                    (ngModelChange)="updateStandard(entry.key, { externalValidTo: $event })"
+                    [name]="'to-' + entry.key"
+                  />
+                </label>
+              </div>
+            }
+          </article>
+        }
+
+        <div class="adders">
+          <button type="button" class="btn" (click)="addStandard('internal')">
+            Add one from the register
+          </button>
+          <button type="button" class="btn" (click)="addStandard('external')">
+            Add an outside standard
+          </button>
+        </div>
+
+        <label class="field field--wide">
+          Traceability override reason, only if the chain will not hold
+          <input
+            [ngModel]="draft().traceabilityOverrideReason"
+            (ngModelChange)="patch({ traceabilityOverrideReason: $event })"
+            name="override"
+          />
+        </label>
+      }
+
+      @case ('points') {
+        <div class="points">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Label</th>
+                <th>Nominal</th>
+                <th>As found</th>
+                <th>As left</th>
+                <th>Expanded U</th>
+                <th>k</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (point of draft().points; track point.key) {
+                <tr>
+                  <td>
+                    <input
+                      type="number"
+                      class="cell cell--tiny"
+                      [ngModel]="point.sequenceNo"
+                      (ngModelChange)="updatePoint(point.key, { sequenceNo: +$event })"
+                      [name]="'seq-' + point.key"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      class="cell"
+                      [ngModel]="point.label"
+                      (ngModelChange)="updatePoint(point.key, { label: $event })"
+                      [name]="'label-' + point.key"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      step="any"
+                      class="cell mono"
+                      [ngModel]="point.nominal"
+                      (ngModelChange)="updatePoint(point.key, { nominal: $event })"
+                      [name]="'nominal-' + point.key"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      step="any"
+                      class="cell mono"
+                      [ngModel]="point.asFound"
+                      (ngModelChange)="updatePoint(point.key, { asFound: $event })"
+                      [name]="'found-' + point.key"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      step="any"
+                      class="cell mono"
+                      [ngModel]="point.asLeft"
+                      (ngModelChange)="updatePoint(point.key, { asLeft: $event })"
+                      [name]="'left-' + point.key"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      step="any"
+                      class="cell mono"
+                      [ngModel]="point.expandedUncertainty"
+                      (ngModelChange)="updatePoint(point.key, { expandedUncertainty: $event })"
+                      [name]="'u-' + point.key"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      step="any"
+                      class="cell cell--tiny mono"
+                      [ngModel]="point.coverageFactor"
+                      (ngModelChange)="updatePoint(point.key, { coverageFactor: $event })"
+                      [name]="'k-' + point.key"
+                    />
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      class="btn btn--quiet"
+                      (click)="removePoint(point.key)"
+                      aria-label="Remove this point"
+                    >
+                      ×
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="adders">
+          <button type="button" class="btn" (click)="addPoint()">Add a point</button>
+          <button type="button" class="btn" (click)="copyFoundToLeft()">
+            Copy as found into as left
+          </button>
+        </div>
+      }
+
+      @case ('review') {
+        <dl class="review">
+          <div><dt>Certificate</dt><dd class="mono">{{ draft().certificateNumber }}</dd></div>
+          <div><dt>Instrument</dt><dd class="mono">{{ draft().assetTag }}</dd></div>
+          <div><dt>Performed</dt><dd>{{ draft().performedOn }} by {{ draft().performedBy }}</dd></div>
+          <div><dt>Issued</dt><dd>{{ draft().issuedOn }} by {{ draft().issuingLab }}</dd></div>
+          <div><dt>Policy</dt><dd>{{ draft().acceptancePolicy }}</dd></div>
+          <div><dt>Points</dt><dd>{{ draft().points.length }}</dd></div>
+          <div><dt>Standards</dt><dd>{{ draft().standards.length }}</dd></div>
+        </dl>
+
+        @if (complete()) {
+          <p class="review__ready">
+            Nothing outstanding. Filing this will work out the verdicts, reassess the interval,
+            and raise an impact assessment if anything came back out of tolerance.
+          </p>
+        }
+      }
+    }
+
+    @if (currentProblems().length > 0) {
+      <ul class="problems" role="alert">
+        @for (problem of currentProblems(); track trackProblem($index, problem)) {
+          <li>{{ problem.message }}</li>
+        }
+      </ul>
+    }
+  </div>
+
+  <footer class="sheet__actions">
+    <button type="button" class="btn" (click)="startAgain()">Start again</button>
+    <span class="sheet__spacer"></span>
+    <button type="button" class="btn" [disabled]="onFirstStep()" (click)="back()">Back</button>
+    @if (onLastStep()) {
+      <button
+        type="button"
+        class="btn btn--primary"
+        [disabled]="!complete() || filing()"
+        (click)="file()"
+      >
+        {{ filing() ? 'Filing…' : 'File the certificate' }}
+      </button>
+    } @else {
+      <button type="button" class="btn btn--primary" (click)="next()">Next</button>
+    }
+  </footer>
+</section>

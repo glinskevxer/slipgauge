@@ -1,0 +1,142 @@
+<section class="budget">
+  <header class="budget__head">
+    <h2>Uncertainty budget</h2>
+    <p class="budget__lead">
+      Every contribution, combined the way the GUM sets out. The coverage factor comes off a
+      Student t table rather than being fixed at two.
+    </p>
+  </header>
+
+  <table class="budget__table">
+    <thead>
+      <tr>
+        <th>Contribution</th>
+        <th>Where from</th>
+        <th>Distribution</th>
+        <th>Value</th>
+        <th>Sensitivity</th>
+        <th>Readings</th>
+        <th>Standard</th>
+        <th>Share</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (component of components(); track component.key) {
+        <tr>
+          <td>
+            <input
+              class="cell"
+              [ngModel]="component.label"
+              (ngModelChange)="update(component.key, { label: $event })"
+              [name]="'label-' + component.key"
+            />
+          </td>
+          <td>
+            <input
+              class="cell"
+              [ngModel]="component.source"
+              (ngModelChange)="update(component.key, { source: $event })"
+              [name]="'source-' + component.key"
+            />
+          </td>
+          <td>
+            <select
+              class="cell"
+              [ngModel]="component.distribution"
+              (ngModelChange)="update(component.key, { distribution: $event })"
+              [name]="'dist-' + component.key"
+            >
+              @for (distribution of distributions; track distribution) {
+                <option [value]="distribution">{{ distributionLabel(distribution) }}</option>
+              }
+            </select>
+          </td>
+          <td>
+            <input
+              type="number"
+              step="any"
+              class="cell cell--num mono"
+              [ngModel]="component.halfWidth"
+              (ngModelChange)="update(component.key, { halfWidth: $event })"
+              [name]="'half-' + component.key"
+            />
+          </td>
+          <td>
+            <input
+              type="number"
+              step="any"
+              class="cell cell--num mono"
+              [ngModel]="component.sensitivity"
+              (ngModelChange)="update(component.key, { sensitivity: $event })"
+              [name]="'sens-' + component.key"
+            />
+          </td>
+          <td>
+            <input
+              type="number"
+              min="2"
+              class="cell cell--num mono"
+              placeholder="spec"
+              [ngModel]="component.observations"
+              (ngModelChange)="update(component.key, { observations: $event })"
+              [name]="'obs-' + component.key"
+            />
+          </td>
+          <td class="mono">{{ standardUncertainty(component) | number: '1.0-9' }}</td>
+          <td>
+            <span class="share">
+              <span class="share__bar" [style.width.%]="shareOf(component.key) * 100"></span>
+              <span class="share__value">{{ percent(shareOf(component.key)) }}</span>
+            </span>
+          </td>
+          <td>
+            <button type="button" class="btn btn--quiet" (click)="remove(component.key)">
+              ×
+            </button>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  <div class="budget__actions">
+    <button type="button" class="btn" (click)="add()">Add a contribution</button>
+    <button type="button" class="btn btn--primary" (click)="use()">
+      Use this uncertainty
+    </button>
+  </div>
+
+  <dl class="results">
+    <div>
+      <dt>Combined standard, u<sub>c</sub></dt>
+      <dd class="mono">{{ combined() | number: '1.0-9' }} {{ unit() }}</dd>
+    </div>
+    <div>
+      <dt>Effective degrees of freedom</dt>
+      <dd class="mono">{{ freedomLabel() }}</dd>
+    </div>
+    <div>
+      <dt>Coverage factor, k</dt>
+      <dd class="mono">{{ factor() | number: '1.2-3' }}</dd>
+    </div>
+    <div>
+      <dt>Expanded, U</dt>
+      <dd class="mono strong">{{ expandedValue() | number: '1.0-9' }} {{ unit() }}</dd>
+    </div>
+    <div>
+      <dt>Test uncertainty ratio</dt>
+      <dd class="mono" [attr.data-verdict]="verdict()">{{ ratioLabel() }}</dd>
+    </div>
+  </dl>
+
+  <p class="advice" [attr.data-verdict]="verdict()">{{ advice() }}</p>
+
+  @if (dominant(); as top) {
+    <p class="dominant">
+      {{ percent(top.share) }} of the variance is
+      <strong>{{ top.component.label || 'an unnamed contribution' }}</strong
+      >. Nothing else will move the number much until that one comes down.
+    </p>
+  }
+</section>
