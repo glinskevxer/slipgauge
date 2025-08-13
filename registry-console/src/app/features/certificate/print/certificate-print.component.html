@@ -1,0 +1,131 @@
+@if (printable(); as sheet) {
+  <div class="controls">
+    @if (!readyToIssue()) {
+      <div class="controls__blocked" role="alert">
+        <strong>This certificate is not complete.</strong>
+        It is missing {{ sheet.missing.join(', ') }}. It can still be printed, but not issued.
+      </div>
+    }
+    @if (withdrawn()) {
+      <div class="controls__blocked" role="alert">
+        <strong>This certificate has been withdrawn.</strong>
+        {{ sheet.certificate.withdrawnReason }}
+      </div>
+    }
+    <button type="button" class="btn btn--primary" (click)="print()">Print</button>
+  </div>
+
+  <article class="paper" [class.paper--void]="withdrawn()">
+    <header class="paper__head">
+      <div>
+        <h1 class="paper__title">Certificate of calibration</h1>
+        <p class="paper__number">{{ sheet.certificate.certificateNumber }}</p>
+      </div>
+      <div class="paper__lab">
+        <p class="paper__labname">{{ sheet.certificate.issuingLab }}</p>
+        <p class="paper__labline">Harlow site, calibration laboratory</p>
+      </div>
+    </header>
+
+    <section class="paper__block">
+      <h2>The instrument</h2>
+      <dl class="facts">
+        <div><dt>Asset tag</dt><dd>{{ sheet.instrument.assetTag }}</dd></div>
+        <div>
+          <dt>Description</dt>
+          <dd>{{ sheet.instrument.manufacturer }} {{ sheet.instrument.model }}</dd>
+        </div>
+        <div><dt>Serial number</dt><dd>{{ sheet.instrument.serialNumber }}</dd></div>
+        <div><dt>Class</dt><dd>{{ sheet.instrument.className }}</dd></div>
+        <div>
+          <dt>Range</dt>
+          <dd>
+            {{ sheet.instrument.rangeLow }} to {{ sheet.instrument.rangeHigh }}
+            {{ sheet.instrument.unit }}
+          </dd>
+        </div>
+        <div>
+          <dt>Resolution</dt>
+          <dd>{{ sheet.instrument.resolution }} {{ sheet.instrument.unit }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="paper__block">
+      <h2>The calibration</h2>
+      <dl class="facts">
+        <div>
+          <dt>Performed on</dt>
+          <dd>{{ sheet.certificate.performedOn | date: 'd MMMM y' }}</dd>
+        </div>
+        <div>
+          <dt>Issued on</dt>
+          <dd>{{ sheet.certificate.issuedOn | date: 'd MMMM y' }}</dd>
+        </div>
+        <div><dt>Performed by</dt><dd>{{ sheet.certificate.performedBy }}</dd></div>
+        <div><dt>Approved by</dt><dd>{{ sheet.certificate.approvedBy ?? 'unsigned' }}</dd></div>
+        <div>
+          <dt>Ambient</dt>
+          <dd>
+            {{ sheet.certificate.ambientTemperature ?? '—' }} °C,
+            {{ sheet.certificate.ambientHumidity ?? '—' }} % rh
+          </dd>
+        </div>
+        <div>
+          <dt>Adjusted</dt>
+          <dd>{{ sheet.certificate.adjusted ? 'yes, during this visit' : 'no' }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="paper__block">
+      <h2>Results</h2>
+      <table class="results">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Nominal</th>
+            <th>As found</th>
+            <th>Error</th>
+            <th>Permitted</th>
+            <th>Uncertainty</th>
+            <th>Ratio</th>
+            <th>Verdict</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of sheet.rows; track row.point.id) {
+            <tr>
+              <td>{{ row.point.sequenceNo }}</td>
+              <td>{{ row.nominal }}</td>
+              <td>{{ row.asFound }}</td>
+              <td>{{ row.error }}</td>
+              <td>{{ row.tolerance }}</td>
+              <td>{{ row.uncertainty }}</td>
+              <td>{{ row.ratio }}</td>
+              <td>{{ row.verdict }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+
+    <section class="paper__block">
+      <h2>Statement of conformity</h2>
+      <p class="paper__statement">{{ sheet.statement }}</p>
+      @if (sheet.certificate.remarks) {
+        <p class="paper__remarks">{{ sheet.certificate.remarks }}</p>
+      }
+    </section>
+
+    <footer class="paper__foot">
+      <p>
+        Uncertainties are expanded at approximately ninety five percent confidence using the
+        coverage factor stated against each point. Results relate only to the item calibrated.
+      </p>
+      <p>This certificate may not be reproduced except in full.</p>
+    </footer>
+  </article>
+} @else if (!loading()) {
+  <p class="missing">That certificate could not be loaded.</p>
+}

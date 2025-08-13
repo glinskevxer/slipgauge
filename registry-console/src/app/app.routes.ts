@@ -30,6 +30,13 @@ export const APP_ROUTES: Routes = [
     loadChildren: () => import('./features/register/register.routes').then((m) => m.REGISTER_ROUTES),
   },
   {
+    path: 'certificates',
+    title: 'Certificates',
+    canActivate: [signedInGuard],
+    loadChildren: () =>
+      import('./features/certificate/certificate.routes').then((m) => m.CERTIFICATE_ROUTES),
+  },
+  {
     path: '**',
     title: 'Not found',
     loadComponent: () => import('./shared/not-found.component').then((m) => m.NotFoundComponent),
