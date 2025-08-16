@@ -1,0 +1,142 @@
+<section class="board">
+  <header class="board__head">
+    <div>
+      <h1>Recall board</h1>
+      <p class="board__sub">
+        Everything falling due inside {{ store.horizon() }} days, plus everything already past it.
+      </p>
+    </div>
+
+    @if (store.summary(); as summary) {
+      <div class="tallies">
+        <div class="tally tally--bad">
+          <span class="tally__count">{{ summary.overdue }}</span>
+          <span class="tally__label">overdue</span>
+        </div>
+        <div class="tally tally--warn">
+          <span class="tally__count">{{ store.countFor('DUE_THIS_WEEK') }}</span>
+          <span class="tally__label">this week</span>
+        </div>
+        <div class="tally">
+          <span class="tally__count">{{ store.countFor('DUE_THIS_MONTH') }}</span>
+          <span class="tally__label">this month</span>
+        </div>
+        <div class="tally">
+          <span class="tally__count">{{ summary.unscheduled }}</span>
+          <span class="tally__label">never calibrated</span>
+        </div>
+      </div>
+    }
+  </header>
+
+  <div class="controls">
+    <label class="controls__field">
+      Horizon
+      <select (change)="store.setHorizon(+$any($event.target).value)">
+        @for (days of horizons; track days) {
+          <option [value]="days" [selected]="days === store.horizon()">{{ days }} days</option>
+        }
+      </select>
+    </label>
+
+    <label class="controls__field">
+      Group by
+      <select (change)="store.groupBy($any($event.target).value)">
+        @for (grouping of groupings; track grouping.key) {
+          <option [value]="grouping.key" [selected]="grouping.key === store.grouping()">
+            {{ grouping.label }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <div class="chips">
+      @for (criticality of criticalities; track criticality) {
+        <button
+          type="button"
+          class="chip"
+          [class.chip--on]="store.criticalities().has(criticality)"
+          (click)="store.toggleCriticality(criticality)"
+        >
+          {{ criticality }}
+        </button>
+      }
+      <button
+        type="button"
+        class="chip"
+        [class.chip--on]="store.referenceOnly()"
+        (click)="store.toggleReferenceOnly()"
+      >
+        Standards only
+      </button>
+    </div>
+  </div>
+
+  @if (store.error()) {
+    <p class="board__error" role="alert">{{ store.error()?.message }}</p>
+  }
+
+  @if (store.isEmpty()) {
+    <sg-empty-state
+      headline="Nothing is due in this window"
+      detail="Widen the horizon or clear the criticality filters."
+    />
+  }
+
+  @for (group of store.groups(); track group.key) {
+    <section class="group">
+      <h2 class="group__head">
+        {{ groupHeading(group.key) }}
+        <span class="group__count">{{ group.items.length }}</span>
+        @if (group.overdue > 0) {
+          <span class="group__overdue">{{ group.overdue }} overdue</span>
+        }
+      </h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Asset tag</th>
+            <th>Instrument</th>
+            <th>Class</th>
+            <th>Location</th>
+            <th>Custodian</th>
+            <th>Last done</th>
+            <th>Interval</th>
+            <th>Due</th>
+            <th>Standing</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of group.items; track entry.instrumentId) {
+            <tr>
+              <td class="mono">
+                <a [routerLink]="['/register', entry.instrumentId]">{{ entry.assetTag }}</a>
+              </td>
+              <td>{{ entry.manufacturer }} {{ entry.model }}</td>
+              <td class="mono">{{ entry.classCode }}</td>
+              <td class="mono">{{ entry.locationCode ?? '—' }}</td>
+              <td>{{ entry.custodian ?? '—' }}</td>
+              <td>{{ entry.lastCalibratedOn ? (entry.lastCalibratedOn | date: 'd MMM y') : 'never' }}</td>
+              <td class="mono">
+                {{ entry.intervalDays ?? '—' }}
+                @if (entry.intervalBasis) {
+                  <span class="basis">{{ basisLabel(entry.intervalBasis) }}</span>
+                }
+              </td>
+              <td>
+                {{ entry.nextDueOn ? (entry.nextDueOn | date: 'd MMM y') : '—' }}
+                <span class="when">{{ dueInWords(entry.daysUntilDue) }}</span>
+              </td>
+              <td>
+                <span class="standing" [attr.data-tone]="standingTone(entry.standing)">
+                  {{ standingLabel(entry.standing) }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+</section>

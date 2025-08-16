@@ -29,6 +29,8 @@ export class AppComponent {
     { path: '/overview', label: 'Overview', hint: 'What is coming and what is on fire' },
     { path: '/register', label: 'Register', hint: 'Every instrument the lab holds' },
     { path: '/certificates/new', label: 'New sheet', hint: 'Enter a calibration result' },
+    { path: '/recalls', label: 'Recalls', hint: 'What is due and what is already late' },
+    { path: '/recalls/capacity', label: 'Capacity', hint: 'Whether the benches can take it' },
   ]);
 
   protected signOut(): void {

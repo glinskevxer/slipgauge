@@ -37,6 +37,12 @@ export const APP_ROUTES: Routes = [
       import('./features/certificate/certificate.routes').then((m) => m.CERTIFICATE_ROUTES),
   },
   {
+    path: 'recalls',
+    title: 'Recall board',
+    canActivate: [signedInGuard],
+    loadChildren: () => import('./features/recall/recall.routes').then((m) => m.RECALL_ROUTES),
+  },
+  {
     path: '**',
     title: 'Not found',
     loadComponent: () => import('./shared/not-found.component').then((m) => m.NotFoundComponent),

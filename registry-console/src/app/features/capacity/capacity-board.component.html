@@ -1,0 +1,116 @@
+<section class="capacity">
+  <header class="capacity__head">
+    <div>
+      <h1>Capacity</h1>
+      <p class="capacity__lead">
+        Twelve weeks of recall work against what the benches can get through. Nothing here
+        moves a due date; it only says what could be brought forward.
+      </p>
+    </div>
+
+    <label class="capacity__control">
+      Bench hours a week
+      <input
+        type="number"
+        min="1"
+        max="200"
+        name="capacity"
+        [ngModel]="capacityHours()"
+        (ngModelChange)="setCapacity(+$event)"
+      />
+    </label>
+  </header>
+
+  <div class="totals">
+    <span><strong>{{ plan().totalHours | number: '1.0-1' }}</strong> hours of work</span>
+    <span><strong>{{ peak() | number: '1.0-1' }}</strong> in the worst week</span>
+    <span [class.totals__bad]="plan().overloadedWeeks > 0">
+      <strong>{{ plan().overloadedWeeks }}</strong> weeks over capacity
+    </span>
+    <span [class.totals__bad]="headroom() < 0">
+      <strong>{{ headroom() | number: '1.0-1' }}</strong> hours of headroom
+    </span>
+    @if (suggestions().length > 0) {
+      <span class="totals__hint">
+        {{ suggestions().length }} moves would flatten it, {{ suggestedHours() | number: '1.0-1' }}
+        hours pulled forward
+      </span>
+    }
+  </div>
+
+  <label class="toggle">
+    <input
+      type="checkbox"
+      name="suggest"
+      [ngModel]="showSuggestions()"
+      (ngModelChange)="showSuggestions.set($event)"
+    />
+    Suggest what to pull forward
+  </label>
+
+  <ol class="weeks">
+    @for (week of plan().weeks; track week.index) {
+      <li class="week" [class.week--over]="over(week)">
+        <button type="button" class="week__head" (click)="toggleWeek(week.index)">
+          <span class="week__when">
+            {{ week.startsOn | date: 'd MMM' }}
+            @if (week.index === 0) {
+              <span class="week__now">this week</span>
+            }
+          </span>
+
+          <span class="week__bar">
+            <span class="week__fill" [style.width.%]="fill(week) * 100"></span>
+            @if (over(week)) {
+              <span class="week__spill">+{{ spill(week) | number: '1.0-1' }} h</span>
+            }
+          </span>
+
+          <span class="week__hours mono">{{ week.hours | number: '1.0-1' }} h</span>
+          <span class="week__count">{{ week.entries.length }}</span>
+          @if (week.overdue > 0) {
+            <span class="week__overdue">{{ week.overdue }} overdue</span>
+          }
+        </button>
+
+        @if (openWeek() === week.index) {
+          <div class="week__body">
+            @if (week.entries.length === 0) {
+              <p class="week__empty">Nothing falls due in this week.</p>
+            }
+
+            <ul class="jobs">
+              @for (entry of week.entries; track entry.instrumentId) {
+                <li class="job">
+                  <a class="mono" [routerLink]="['/register', entry.instrumentId]">
+                    {{ entry.assetTag }}
+                  </a>
+                  <span>{{ entry.manufacturer }} {{ entry.model }}</span>
+                  <span class="job__class mono">{{ entry.classCode }}</span>
+                  <span class="job__criticality">{{ entry.criticality }}</span>
+                  <span class="job__hours mono">{{ hoursFor(entry) }} h</span>
+                </li>
+              }
+            </ul>
+
+            @if (suggestionsFor(week.index).length > 0) {
+              <div class="moves">
+                <h3>Could be pulled forward</h3>
+                <ul>
+                  @for (move of suggestionsFor(week.index); track move.entry.instrumentId) {
+                    <li>
+                      <span class="mono">{{ move.entry.assetTag }}</span>
+                      into the week of
+                      {{ plan().weeks[move.toWeek].startsOn | date: 'd MMM' }}, freeing
+                      {{ move.hours }} hours
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+          </div>
+        }
+      </li>
+    }
+  </ol>
+</section>
