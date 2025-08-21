@@ -1,0 +1,147 @@
+.dash {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sg-space-4);
+}
+
+.dash__head h1 {
+  font-size: var(--sg-text-xl);
+}
+
+.dash__clear {
+  margin: var(--sg-space-2) 0 0;
+  color: var(--sg-pass);
+  font-size: var(--sg-text-sm);
+}
+
+.dash__error {
+  padding: var(--sg-space-3);
+  background: var(--sg-fail-soft);
+  border: 1px solid var(--sg-fail);
+  border-radius: var(--sg-radius-md);
+  color: var(--sg-fail);
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--sg-space-3);
+}
+
+.tile {
+  padding: var(--sg-space-4);
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-border);
+  border-radius: var(--sg-radius-lg);
+  color: inherit;
+  text-align: center;
+  text-decoration: none;
+}
+
+.tile:hover {
+  border-color: var(--sg-border-strong);
+  text-decoration: none;
+}
+
+.tile--bad {
+  border-color: var(--sg-fail);
+}
+
+.tile--bad .tile__count {
+  color: var(--sg-fail);
+}
+
+.tile--warn {
+  border-color: var(--sg-marginal);
+}
+
+.tile--warn .tile__count {
+  color: var(--sg-marginal);
+}
+
+.tile__count {
+  display: block;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.tile__label {
+  display: block;
+  color: var(--sg-ink-muted);
+  font-size: var(--sg-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.charts {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--sg-space-3);
+}
+
+@media (max-width: 60rem) {
+  .charts {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  padding: var(--sg-space-4);
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-border);
+  border-radius: var(--sg-radius-lg);
+}
+
+.card--wide {
+  grid-column: span 1;
+}
+
+.card__head {
+  margin: 0 0 var(--sg-space-3);
+  font-size: var(--sg-text-md);
+}
+
+.offenders,
+.assessments {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.offenders li,
+.assessments li {
+  display: grid;
+  grid-template-columns: 8rem 1fr auto;
+  gap: var(--sg-space-3);
+  padding: var(--sg-space-2) 0;
+  border-bottom: 1px dashed var(--sg-border);
+  font-size: var(--sg-text-sm);
+}
+
+.assessments li {
+  grid-template-columns: 8rem 5rem 1fr auto;
+}
+
+.offenders__when,
+.assessments__when {
+  color: var(--sg-ink-muted);
+}
+
+.assessments__severity {
+  font-size: var(--sg-text-xs);
+  font-weight: 700;
+}
+
+.assessments__severity[data-tone='bad'] {
+  color: var(--sg-fail);
+}
+
+.assessments__severity[data-tone='warn'] {
+  color: var(--sg-marginal);
+}
+
+.assessments__severity[data-tone='ok'] {
+  color: var(--sg-pass);
+}
+

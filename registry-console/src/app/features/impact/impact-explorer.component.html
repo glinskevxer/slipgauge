@@ -1,0 +1,167 @@
+<section class="impact">
+  <aside class="impact__list">
+    <h1>Open assessments</h1>
+
+    @if (store.assessments().length === 0) {
+      <sg-empty-state
+        headline="Nothing outstanding"
+        detail="No instrument is currently under an out of tolerance assessment."
+      />
+    }
+
+    @for (assessment of store.assessments(); track assessment.id) {
+      <button
+        type="button"
+        class="card"
+        [class.card--on]="store.selected()?.id === assessment.id"
+        (click)="store.select(assessment.id)"
+      >
+        <span class="card__tag">{{ assessment.assetTag }}</span>
+        <span class="card__severity" [attr.data-tone]="severityTone(assessment.severity)">
+          {{ assessment.severity }}
+        </span>
+        <span class="card__meta">
+          {{ assessment.itemCount }} caught, {{ assessment.pendingCount }} still open
+        </span>
+        <span class="card__meta">raised {{ assessment.raisedAt | date: 'd MMM y' }}</span>
+      </button>
+    }
+  </aside>
+
+  @if (store.selected(); as assessment) {
+    <div class="impact__detail">
+      <header class="impact__head">
+        <div>
+          <h2>
+            {{ assessment.assetTag }} found out of tolerance on
+            {{ assessment.triggerCertificateNumber }}
+          </h2>
+          <p class="impact__window">
+            Everything between {{ assessment.windowFrom | date: 'd MMM y' }} and
+            {{ assessment.windowTo | date: 'd MMM y' }} is suspect. The cascade reached
+            {{ assessment.maxDepth }} hop{{ assessment.maxDepth === 1 ? '' : 's' }}.
+          </p>
+        </div>
+        <a class="impact__link" [routerLink]="['/register', assessment.instrumentId]">
+          Open the instrument
+        </a>
+      </header>
+
+      <div class="progress" [attr.aria-valuenow]="store.progressPercent()" role="progressbar">
+        <span class="progress__bar" [style.width.%]="store.progressPercent()"></span>
+        <span class="progress__label">{{ store.progressPercent() }}% dispositioned</span>
+      </div>
+
+      <div class="filters">
+        @for (kind of kinds; track kind) {
+          <button
+            type="button"
+            class="chip"
+            [class.chip--on]="store.kindFilter().has(kind)"
+            (click)="store.toggleKind(kind)"
+          >
+            {{ kind }}
+          </button>
+        }
+        <button
+          type="button"
+          class="chip"
+          [class.chip--on]="store.pendingOnly()"
+          (click)="store.togglePendingOnly()"
+        >
+          Still open only
+        </button>
+      </div>
+
+      <div class="columns">
+        @for (column of store.columns(); track column.depth) {
+          <section class="column">
+            <h3 class="column__head">
+              {{ depthLabel(column.depth) }}
+              <span class="column__count">{{ column.items.length }}</span>
+            </h3>
+
+            @for (item of column.items; track item.id) {
+              <article class="item" [class.item--pending]="item.disposition === 'PENDING'">
+                <header class="item__head">
+                  <span class="item__kind">{{ item.kind }}</span>
+                  <span class="item__when">{{ item.occurredOn | date: 'd MMM y' }}</span>
+                </header>
+                <p class="item__what">
+                  @if (item.assetTag) {
+                    <span class="mono">{{ item.assetTag }}</span>
+                  }
+                  {{ item.label }}
+                </p>
+                @if (item.note) {
+                  <p class="item__note">{{ item.note }}</p>
+                }
+                <footer class="item__foot">
+                  <span class="item__disposition">{{ dispositionLabel(item.disposition) }}</span>
+                  @if (item.disposition === 'PENDING') {
+                    <select (change)="store.dispose(item.id, $any($event.target).value)">
+                      <option value="">Set disposition…</option>
+                      @for (disposition of dispositions; track disposition) {
+                        <option [value]="disposition">{{ dispositionLabel(disposition) }}</option>
+                      }
+                    </select>
+                  }
+                </footer>
+              </article>
+            }
+          </section>
+        }
+      </div>
+
+      <footer class="actions">
+        @if (store.caughtCertificates().length > 0 && assessment.status !== 'CLOSED') {
+          <form class="action" (ngSubmit)="withdrawAll()">
+            <label>
+              Withdraw the {{ store.caughtCertificates().length }} caught certificates
+              <input
+                name="withdrawReason"
+                placeholder="Reason for the withdrawal"
+                [ngModel]="withdrawReason()"
+                (ngModelChange)="withdrawReason.set($event)"
+              />
+            </label>
+            <button type="submit" class="btn btn--danger" [disabled]="!withdrawReason().trim()">
+              Withdraw
+            </button>
+          </form>
+        }
+
+        @if (store.canClose()) {
+          <form class="action" (ngSubmit)="closeAssessment()">
+            <label>
+              Closed by
+              <input
+                name="closedBy"
+                [ngModel]="closedBy()"
+                (ngModelChange)="closedBy.set($event)"
+              />
+            </label>
+            <label class="action__wide">
+              Conclusion
+              <input
+                name="conclusion"
+                [ngModel]="conclusion()"
+                (ngModelChange)="conclusion.set($event)"
+              />
+            </label>
+            <button type="submit" class="btn btn--primary">Close the assessment</button>
+          </form>
+        } @else if (assessment.status !== 'CLOSED') {
+          <p class="actions__blocked">
+            {{ assessment.pendingCount }} item{{ assessment.pendingCount === 1 ? '' : 's' }}
+            still need a disposition before this can be closed.
+          </p>
+        } @else {
+          <p class="actions__closed">
+            Closed by {{ assessment.closedBy }}: {{ assessment.conclusion }}
+          </p>
+        }
+      </footer>
+    </div>
+  }
+</section>

@@ -31,6 +31,7 @@ export class AppComponent {
     { path: '/certificates/new', label: 'New sheet', hint: 'Enter a calibration result' },
     { path: '/recalls', label: 'Recalls', hint: 'What is due and what is already late' },
     { path: '/recalls/capacity', label: 'Capacity', hint: 'Whether the benches can take it' },
+    { path: '/impact', label: 'Impact', hint: 'Where an out of tolerance result reached' },
   ]);
 
   protected signOut(): void {

@@ -1,0 +1,101 @@
+<section class="dash">
+  <header class="dash__head">
+    <h1>{{ greeting() }}, {{ session.displayName() }}</h1>
+    @if (store.nothingWrong()) {
+      <p class="dash__clear">Nothing overdue and nothing under assessment.</p>
+    }
+  </header>
+
+  @if (store.error()) {
+    <p class="dash__error" role="alert">{{ store.error()?.message }}</p>
+  }
+
+  <div class="tiles">
+    <a class="tile" [class.tile--bad]="store.overdue() > 0" routerLink="/recalls">
+      <span class="tile__count">{{ store.overdue() }}</span>
+      <span class="tile__label">overdue</span>
+    </a>
+    <a class="tile" [class.tile--warn]="store.dueSoon() > 0" routerLink="/recalls">
+      <span class="tile__count">{{ store.dueSoon() }}</span>
+      <span class="tile__label">due this week</span>
+    </a>
+    <a class="tile" routerLink="/recalls">
+      <span class="tile__count">{{ store.unscheduled() }}</span>
+      <span class="tile__label">never calibrated</span>
+    </a>
+    <a class="tile" [class.tile--bad]="store.highSeverity() > 0" routerLink="/impact">
+      <span class="tile__count">{{ store.openAssessments() }}</span>
+      <span class="tile__label">open assessments</span>
+    </a>
+    <a class="tile" [class.tile--warn]="store.pendingDispositions() > 0" routerLink="/impact">
+      <span class="tile__count">{{ store.pendingDispositions() }}</span>
+      <span class="tile__label">items to disposition</span>
+    </a>
+  </div>
+
+  <div class="charts">
+    <article class="card card--wide">
+      <sg-bar-chart
+        caption="Recall workload, next twelve weeks"
+        [data]="store.workloadByWeek()"
+        [width]="720"
+      />
+    </article>
+
+    <article class="card">
+      <sg-donut-chart
+        caption="Where the estate stands"
+        centreLabel="instruments"
+        [slices]="store.standingMix()"
+      />
+    </article>
+
+    <article class="card card--wide">
+      <sg-bar-chart
+        caption="Due inside a month, by room"
+        [data]="store.loadByLocation()"
+        [width]="720"
+      />
+    </article>
+  </div>
+
+  @if (store.worstOffenders().length > 0) {
+    <article class="card">
+      <h2 class="card__head">Longest overdue</h2>
+      <ul class="offenders">
+        @for (entry of store.worstOffenders(); track entry.instrumentId) {
+          <li>
+            <a class="mono" [routerLink]="['/register', entry.instrumentId]">
+              {{ entry.assetTag }}
+            </a>
+            <span>{{ entry.manufacturer }} {{ entry.model }}</span>
+            <span class="offenders__when">{{ dueInWords(entry.daysUntilDue) }}</span>
+          </li>
+        }
+      </ul>
+    </article>
+  }
+
+  @if (store.assessments().length > 0) {
+    <article class="card">
+      <h2 class="card__head">Open impact assessments</h2>
+      <ul class="assessments">
+        @for (assessment of store.assessments(); track assessment.id) {
+          <li>
+            <span class="mono">{{ assessment.assetTag }}</span>
+            <span
+              class="assessments__severity"
+              [attr.data-tone]="severityTone(assessment.severity)"
+            >
+              {{ assessment.severity }}
+            </span>
+            <span>{{ assessment.itemCount }} caught, {{ assessment.pendingCount }} open</span>
+            <span class="assessments__when">
+              raised {{ assessment.raisedAt | date: 'd MMM y' }}
+            </span>
+          </li>
+        }
+      </ul>
+    </article>
+  }
+</section>

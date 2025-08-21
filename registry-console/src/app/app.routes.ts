@@ -21,7 +21,8 @@ export const APP_ROUTES: Routes = [
     path: 'overview',
     title: 'Overview',
     canActivate: [signedInGuard],
-    loadComponent: () => import('./shared/not-found.component').then((m) => m.NotFoundComponent),
+    loadComponent: () =>
+      import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
   },
   {
     path: 'register',
@@ -41,6 +42,12 @@ export const APP_ROUTES: Routes = [
     title: 'Recall board',
     canActivate: [signedInGuard],
     loadChildren: () => import('./features/recall/recall.routes').then((m) => m.RECALL_ROUTES),
+  },
+  {
+    path: 'impact',
+    title: 'Impact assessments',
+    canActivate: [signedInGuard],
+    loadChildren: () => import('./features/impact/impact.routes').then((m) => m.IMPACT_ROUTES),
   },
   {
     path: '**',
