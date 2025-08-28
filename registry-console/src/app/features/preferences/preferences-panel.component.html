@@ -1,0 +1,141 @@
+<section class="prefs">
+  <header class="prefs__head">
+    <div>
+      <h1>This terminal</h1>
+      <p class="prefs__lead">
+        Kept on the machine rather than against your account, because a bench terminal is
+        shared across shifts and sits at a fixed distance from whoever is reading it.
+      </p>
+    </div>
+    @if (preferences.customised()) {
+      <button type="button" class="btn" (click)="reset()">Put back to the defaults</button>
+    }
+  </header>
+
+  <fieldset class="group">
+    <legend>Appearance</legend>
+
+    <div class="choices">
+      @for (theme of themes; track theme.value) {
+        <button
+          type="button"
+          class="choice"
+          [class.choice--on]="current().theme === theme.value"
+          (click)="setTheme(theme.value)"
+        >
+          {{ theme.label }}
+        </button>
+      }
+    </div>
+
+    <div class="choices choices--stacked">
+      @for (density of densities; track density.value) {
+        <button
+          type="button"
+          class="choice choice--wide"
+          [class.choice--on]="current().density === density.value"
+          (click)="setDensity(density.value)"
+        >
+          <span class="choice__label">{{ density.label }}</span>
+          <span class="choice__hint">{{ density.hint }}</span>
+        </button>
+      }
+    </div>
+  </fieldset>
+
+  <fieldset class="group">
+    <legend>The register</legend>
+
+    <label class="field">
+      Rows per page
+      <select
+        name="pageSize"
+        [ngModel]="current().pageSize"
+        (ngModelChange)="setPageSize(+$event)"
+      >
+        @for (size of pageSizes; track size) {
+          <option [value]="size">{{ size }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="toggle">
+      <input
+        type="checkbox"
+        name="hideRetired"
+        [ngModel]="current().hideRetired"
+        (ngModelChange)="toggle('hideRetired')"
+      />
+      Hide retired instruments unless asked for
+    </label>
+  </fieldset>
+
+  <fieldset class="group">
+    <legend>Recalls and capacity</legend>
+
+    <label class="field">
+      The board opens showing
+      <select
+        name="horizon"
+        [ngModel]="current().recallHorizonDays"
+        (ngModelChange)="setHorizon(+$event)"
+      >
+        @for (horizon of horizons; track horizon) {
+          <option [value]="horizon">{{ horizon }} days</option>
+        }
+      </select>
+    </label>
+
+    <label class="field">
+      Bench hours a week
+      <input
+        type="number"
+        min="1"
+        max="200"
+        name="capacity"
+        [ngModel]="current().capacityHours"
+        (ngModelChange)="setCapacity(+$event)"
+      />
+    </label>
+  </fieldset>
+
+  <fieldset class="group">
+    <legend>What is running here</legend>
+
+    <dl class="versions">
+      <div><dt>Console</dt><dd class="mono">{{ build.console }}</dd></div>
+      @if (build.service(); as service) {
+        <div><dt>Registry service</dt><dd class="mono">{{ service.version }}</dd></div>
+        <div><dt>Laboratory</dt><dd>{{ service.laboratory }}</dd></div>
+        <div><dt>Up for</dt><dd>{{ build.uptime() }}</dd></div>
+      } @else {
+        <div><dt>Registry service</dt><dd>could not be reached</dd></div>
+      }
+    </dl>
+
+    @if (build.mismatched()) {
+      <p class="hint hint--warn">
+        The console and the service are from different releases. Reload the page, and if that
+        does not settle it, say so before assuming anything else is wrong.
+      </p>
+    }
+  </fieldset>
+
+  <fieldset class="group">
+    <legend>Warnings</legend>
+
+    <label class="toggle">
+      <input
+        type="checkbox"
+        name="warnUntraceable"
+        [ngModel]="current().warnUntraceableUse"
+        (ngModelChange)="toggle('warnUntraceableUse')"
+      />
+      Warn when a use is logged with no work order and no customer
+    </label>
+    <p class="hint">
+      Turning this off does not stop the entry being recorded. It only stops the console
+      pointing out that nothing could be chased if the instrument turns out to be wrong.
+    </p>
+  </fieldset>
+</section>

@@ -1,0 +1,138 @@
+<section class="admin">
+  <header class="admin__head">
+    <div>
+      <h1>Calibration classes</h1>
+      <p class="admin__lead">
+        Changing a class moves the window every instrument in it runs inside. The interval
+        engine is never allowed outside the floor and the ceiling set here.
+      </p>
+    </div>
+  </header>
+
+  <div class="filters">
+    <button
+      type="button"
+      class="chip"
+      [class.chip--on]="filter() === 'ALL'"
+      (click)="filter.set('ALL')"
+    >
+      All {{ classes().length }}
+    </button>
+    @for (discipline of disciplines; track discipline) {
+      <button
+        type="button"
+        class="chip"
+        [class.chip--on]="filter() === discipline"
+        (click)="filter.set(discipline)"
+      >
+        {{ discipline }}
+        <span class="chip__count">{{ countsByDiscipline().get(discipline) ?? 0 }}</span>
+      </button>
+    }
+  </div>
+
+  <div class="table">
+    <table>
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Discipline</th>
+          <th>Criticality</th>
+          <th>Floor</th>
+          <th>Base</th>
+          <th>Ceiling</th>
+          <th>Room to move</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (entry of shown(); track entry.code) {
+          @if (editing() === entry.code && draft(); as draftValue) {
+            <tr class="row row--editing">
+              <td class="mono">{{ entry.code }}</td>
+              <td>
+                <input
+                  class="cell"
+                  [ngModel]="draftValue.name"
+                  (ngModelChange)="change({ name: $event })"
+                  [name]="'name-' + entry.code"
+                />
+              </td>
+              <td>{{ entry.discipline }}</td>
+              <td>
+                <select
+                  class="cell"
+                  [ngModel]="draftValue.criticality"
+                  (ngModelChange)="change({ criticality: $event })"
+                  [name]="'crit-' + entry.code"
+                >
+                  @for (criticality of criticalities; track criticality) {
+                    <option [value]="criticality">{{ criticality }}</option>
+                  }
+                </select>
+              </td>
+              <td>
+                <input
+                  type="number"
+                  class="cell cell--num"
+                  [ngModel]="draftValue.minIntervalDays"
+                  (ngModelChange)="change({ minIntervalDays: +$event })"
+                  [name]="'min-' + entry.code"
+                />
+              </td>
+              <td>
+                <input
+                  type="number"
+                  class="cell cell--num"
+                  [ngModel]="draftValue.baseIntervalDays"
+                  (ngModelChange)="change({ baseIntervalDays: +$event })"
+                  [name]="'base-' + entry.code"
+                />
+              </td>
+              <td>
+                <input
+                  type="number"
+                  class="cell cell--num"
+                  [ngModel]="draftValue.maxIntervalDays"
+                  (ngModelChange)="change({ maxIntervalDays: +$event })"
+                  [name]="'max-' + entry.code"
+                />
+              </td>
+              <td colspan="2" class="row__actions">
+                @if (draftInvalid()) {
+                  <span class="row__error">
+                    The floor, the base and the ceiling have to run in that order.
+                  </span>
+                }
+                <button type="button" class="btn" (click)="cancel()">Cancel</button>
+                <button
+                  type="button"
+                  class="btn btn--primary"
+                  [disabled]="draftInvalid() || saving()"
+                  (click)="save()"
+                >
+                  Save
+                </button>
+              </td>
+            </tr>
+          } @else {
+            <tr class="row">
+              <td class="mono">{{ entry.code }}</td>
+              <td>{{ entry.name }}</td>
+              <td>{{ entry.discipline }}</td>
+              <td>{{ entry.criticality }}</td>
+              <td class="mono">{{ entry.minIntervalDays }}</td>
+              <td class="mono">{{ entry.baseIntervalDays }}</td>
+              <td class="mono">{{ entry.maxIntervalDays }}</td>
+              <td class="quiet">{{ windowOf(entry) }}</td>
+              <td>
+                <button type="button" class="btn btn--quiet" (click)="edit(entry)">Edit</button>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

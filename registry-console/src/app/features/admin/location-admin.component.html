@@ -1,0 +1,69 @@
+<section class="admin">
+  <header class="admin__head">
+    <h1>Site tree</h1>
+    <p class="admin__lead">
+      {{ rows().length }} locations across {{ siteCount() }} sites. A location cannot be moved
+      inside its own subtree, so those options are simply absent.
+    </p>
+  </header>
+
+  <form class="adder" (ngSubmit)="add()">
+    <label class="field">
+      Code
+      <input class="mono" name="code" [ngModel]="newCode()" (ngModelChange)="newCode.set($event)" />
+    </label>
+    <label class="field">
+      Name
+      <input name="name" [ngModel]="newName()" (ngModelChange)="newName.set($event)" />
+    </label>
+    <label class="field">
+      Site
+      <input class="mono" name="site" [ngModel]="newSite()" (ngModelChange)="newSite.set($event)" />
+    </label>
+    <label class="field">
+      Inside
+      <select name="parent" [ngModel]="newParent()" (ngModelChange)="newParent.set($event)">
+        <option value="">A site of its own</option>
+        @for (row of rows(); track row.location.code) {
+          <option [value]="row.location.code">{{ row.location.path.join(' / ') }}</option>
+        }
+      </select>
+    </label>
+    <button type="submit" class="btn btn--primary" [disabled]="!canAdd() || saving()">
+      Add
+    </button>
+  </form>
+
+  <ul class="tree">
+    @for (row of rows(); track row.location.code) {
+      <li class="node" [style.padding-left]="indent(row.depth)">
+        <span class="node__code mono">{{ row.location.code }}</span>
+        <span class="node__name">{{ row.location.name }}</span>
+        <span class="node__site mono">{{ row.location.site }}</span>
+
+        @if (moving() === row.location.code) {
+          <span class="node__move">
+            <select
+              [name]="'parent-' + row.location.code"
+              (change)="moveTo(row.location.code, $any($event.target).value)"
+            >
+              <option value="">Move to a site of its own</option>
+              @for (candidate of parentsFor(row.location.code); track candidate) {
+                <option [value]="candidate">Move inside {{ candidate }}</option>
+              }
+            </select>
+            <button type="button" class="btn btn--quiet" (click)="cancelMove()">Cancel</button>
+          </span>
+        } @else {
+          <button
+            type="button"
+            class="btn btn--quiet node__action"
+            (click)="startMove(row.location.code)"
+          >
+            Move
+          </button>
+        }
+      </li>
+    }
+  </ul>
+</section>

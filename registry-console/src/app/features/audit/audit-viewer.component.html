@@ -1,0 +1,79 @@
+<section class="audit">
+  <header class="audit__head">
+    <div>
+      <h1>Refusals</h1>
+      <p class="audit__lead">
+        Everything the registry turned away in the last {{ days() }} days, grouped by who
+        asked for what.
+      </p>
+    </div>
+
+    <div class="audit__counts">
+      <span><strong>{{ totalRefusals() }}</strong> refusals</span>
+      <span><strong>{{ distinctActors() }}</strong> people</span>
+      @if (worrying().length > 0) {
+        <span class="audit__alarm">{{ worrying().length }} worth a look</span>
+      }
+    </div>
+  </header>
+
+  <div class="controls">
+    @for (window of windows; track window) {
+      <button
+        type="button"
+        class="chip"
+        [class.chip--on]="days() === window"
+        (click)="setWindow(window)"
+      >
+        {{ window }} day{{ window === 1 ? '' : 's' }}
+      </button>
+    }
+
+    <label class="controls__search">
+      <span class="sr-only">Filter by person</span>
+      <input
+        placeholder="Filter by person"
+        name="actor"
+        [ngModel]="actorFilter()"
+        (ngModelChange)="actorFilter.set($event)"
+      />
+    </label>
+  </div>
+
+  @if (groups().length === 0 && !loading()) {
+    <sg-empty-state
+      headline="Nothing was refused"
+      detail="No request was turned away inside this window."
+    />
+  }
+
+  <ul class="groups">
+    @for (group of groups(); track group.actor + group.action) {
+      <li class="group" [class.group--worrying]="isWorrying(group)">
+        <button type="button" class="group__head" (click)="toggle(group)">
+          <span class="group__actor mono">{{ group.actor }}</span>
+          <span class="group__action">{{ group.action }}</span>
+          <span class="group__count">{{ group.count }}</span>
+          <span class="group__when">
+            {{ group.first | date: 'd MMM HH:mm' }} to {{ group.last | date: 'd MMM HH:mm' }}
+          </span>
+        </button>
+
+        @if (isExpanded(group)) {
+          <ul class="lines">
+            @for (line of group.lines; track line.id) {
+              <li class="line">
+                <span class="line__when">{{ line.occurredAt | date: 'd MMM y HH:mm:ss' }}</span>
+                <span class="line__outcome" [attr.data-tone]="outcomeTone(line.outcome)">
+                  {{ line.outcome }}
+                </span>
+                <span class="line__detail">{{ line.detail ?? '—' }}</span>
+                <span class="line__correlation mono">{{ line.correlation ?? '' }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </li>
+    }
+  </ul>
+</section>

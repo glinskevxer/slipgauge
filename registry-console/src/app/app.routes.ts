@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { signedInGuard } from './core/auth/signed-in.guard';
+import { roleGuard, signedInGuard } from './core/auth/signed-in.guard';
 
 /**
  * Everything past sign in is lazy. The console is used on bench terminals over
@@ -48,6 +48,28 @@ export const APP_ROUTES: Routes = [
     title: 'Impact assessments',
     canActivate: [signedInGuard],
     loadChildren: () => import('./features/impact/impact.routes').then((m) => m.IMPACT_ROUTES),
+  },
+  {
+    path: 'refusals',
+    title: 'Refusals',
+    canActivate: [roleGuard('AUDITOR', 'QUALITY_MANAGER', 'ADMIN')],
+    loadComponent: () =>
+      import('./features/audit/audit-viewer.component').then((m) => m.AuditViewerComponent),
+  },
+  {
+    path: 'terminal',
+    title: 'This terminal',
+    canActivate: [signedInGuard],
+    loadComponent: () =>
+      import('./features/preferences/preferences-panel.component').then(
+        (m) => m.PreferencesPanelComponent,
+      ),
+  },
+  {
+    path: 'admin',
+    title: 'Administration',
+    canActivate: [signedInGuard],
+    loadChildren: () => import('./features/admin/admin.routes').then((m) => m.ADMIN_ROUTES),
   },
   {
     path: '**',
