@@ -2,6 +2,9 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { SessionService } from './core/auth/session.service';
+import { CommandPaletteComponent } from './shared/palette/command-palette.component';
+import { LinkIndicatorComponent } from './shared/components/link-indicator.component';
+import { NoticeTrayComponent } from './shared/components/notice-tray.component';
 
 interface NavEntry {
   readonly path: string;
@@ -9,14 +12,17 @@ interface NavEntry {
   readonly hint: string;
 }
 
-/**
- * The frame every screen sits inside. It knows who is signed in and nothing
- * else, so a feature can be added without touching it.
- */
 @Component({
   selector: 'sg-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    NoticeTrayComponent,
+    CommandPaletteComponent,
+    LinkIndicatorComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -33,6 +39,20 @@ export class AppComponent {
     { path: '/recalls/capacity', label: 'Capacity', hint: 'Whether the benches can take it' },
     { path: '/impact', label: 'Impact', hint: 'Where an out of tolerance result reached' },
   ]);
+
+  protected readonly terminalNav = signal<readonly NavEntry[]>([
+    { path: '/terminal', label: 'This terminal', hint: 'Theme, density and defaults' },
+  ]);
+
+  protected readonly qualityNav = signal<readonly NavEntry[]>([
+    { path: '/refusals', label: 'Refusals', hint: 'What the registry turned away' },
+  ]);
+
+  protected readonly adminNav = signal<readonly NavEntry[]>([
+    { path: '/admin/classes', label: 'Admin', hint: 'Classes, locations and accounts' },
+  ]);
+
+  protected readonly labName = signal('Slipgauge Metrology');
 
   protected signOut(): void {
     this.session.signOut();

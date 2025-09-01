@@ -56,6 +56,17 @@ export class PointTableComponent {
       }),
   );
 
+  /**
+   * The coverage factor printed in the header. Every point on a certificate
+   * shares one in practice, so the first row speaks for all of them, and an
+   * empty table falls back to the two the bench reports by default.
+   */
+  protected readonly coverageFactor = computed(() => {
+    const rows = this.rows();
+
+    return rows.length === 0 ? 2 : rows[0].point.coverageFactor;
+  });
+
   protected readonly worstRatio = computed(() => {
     const ratios = this.rows()
       .map((row) => row.ratio)

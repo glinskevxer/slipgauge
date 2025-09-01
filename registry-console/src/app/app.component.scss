@@ -1,98 +1,91 @@
-@use '../app/styles/tokens' as *;
-
 .shell {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: var(--surface-page);
 }
 
 .shell__bar {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  padding: 0 1.25rem;
-  height: 3.25rem;
-  background: var(--surface-raised);
-  border-bottom: 1px solid var(--line-soft);
-  position: sticky;
-  top: 0;
-  z-index: 20;
+  gap: var(--sg-space-6);
+  padding: 0 var(--sg-space-5);
+  height: 52px;
+  background: var(--sg-surface);
+  border-bottom: 1px solid var(--sg-border);
+  box-shadow: var(--sg-shadow-1);
+}
+
+.shell__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sg-space-2);
+  font-weight: 600;
 }
 
 .shell__mark {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.05;
-  text-decoration: none;
-  color: inherit;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--sg-radius-sm);
+  background: var(--sg-accent);
 }
 
-.shell__mark-name {
-  font-weight: 650;
-  letter-spacing: 0.01em;
-}
-
-.shell__mark-kind {
-  font-size: 0.7rem;
-  color: var(--ink-muted);
-  text-transform: lowercase;
+.shell__name {
+  font-size: var(--sg-text-md);
+  letter-spacing: -0.01em;
 }
 
 .shell__nav {
   display: flex;
-  gap: 0.25rem;
-  flex: 1 1 auto;
-  overflow-x: auto;
+  gap: var(--sg-space-1);
 }
 
-.shell__nav-link {
-  padding: 0.4rem 0.7rem;
-  border-radius: var(--radius-sm);
-  color: var(--ink-muted);
+.shell__link {
+  padding: var(--sg-space-1) var(--sg-space-3);
+  border-radius: var(--sg-radius-sm);
+  color: var(--sg-ink-muted);
+  font-size: var(--sg-text-sm);
+  font-weight: 500;
+}
+
+.shell__link:hover {
+  background: var(--sg-surface-sunken);
   text-decoration: none;
-  white-space: nowrap;
-
-  &:hover {
-    background: var(--surface-sunken);
-    color: var(--ink-strong);
-  }
 }
 
-.shell__nav-link--active {
-  background: var(--accent-soft);
-  color: var(--accent-ink);
-  font-weight: 600;
+.shell__link--active {
+  background: var(--sg-accent-soft);
+  color: var(--sg-accent);
 }
 
 .shell__who {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: var(--sg-space-3);
+  margin-left: auto;
 }
 
-.shell__name {
-  font-size: 0.85rem;
-  color: var(--ink-muted);
+.shell__person {
+  color: var(--sg-ink-muted);
+  font-size: var(--sg-text-sm);
 }
 
 .shell__out {
-  border: 1px solid var(--line-soft);
-  background: transparent;
-  border-radius: var(--radius-sm);
-  padding: 0.3rem 0.7rem;
+  padding: 2px var(--sg-space-2);
+  border: 1px solid var(--sg-border-strong);
+  border-radius: var(--sg-radius-sm);
+  background: var(--sg-surface);
+  color: var(--sg-ink-muted);
   font: inherit;
-  font-size: 0.85rem;
-  color: var(--ink-strong);
+  font-size: var(--sg-text-xs);
   cursor: pointer;
-  text-decoration: none;
-
-  &:hover {
-    background: var(--surface-sunken);
-  }
 }
 
-.shell__main {
+.shell__out:hover {
+  background: var(--sg-surface-sunken);
+  color: var(--sg-ink);
+}
+
+.shell__body {
   flex: 1 1 auto;
-  padding: 1.25rem;
+  padding: var(--sg-space-5);
 }

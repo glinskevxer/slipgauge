@@ -1,33 +1,71 @@
 <div class="shell">
   <header class="shell__bar">
-    <a class="shell__mark" routerLink="/overview">
-      <span class="shell__mark-name">Slipgauge</span>
-      <span class="shell__mark-kind">calibration registry</span>
-    </a>
+    <div class="shell__brand">
+      <span class="shell__mark" aria-hidden="true"></span>
+      <span class="shell__name">{{ labName() }}</span>
+    </div>
 
     <nav class="shell__nav" aria-label="Sections">
-      @for (entry of navigation(); track entry.path) {
+      @if (session.signedIn()) {
+        @for (entry of navigation(); track entry.path) {
         <a
-          class="shell__nav-link"
+          class="shell__link"
           [routerLink]="entry.path"
-          routerLinkActive="shell__nav-link--active"
+          routerLinkActive="shell__link--active"
           [title]="entry.hint"
-          >{{ entry.label }}</a
-        >
+            >{{ entry.label }}</a
+          >
+        }
+        @if (session.has('AUDITOR', 'QUALITY_MANAGER', 'ADMIN')) {
+          @for (entry of qualityNav(); track entry.path) {
+            <a
+              class="shell__link"
+              [routerLink]="entry.path"
+              routerLinkActive="shell__link--active"
+              [title]="entry.hint"
+              >{{ entry.label }}</a
+            >
+          }
+        }
+        @if (session.has('ADMIN')) {
+          @for (entry of adminNav(); track entry.path) {
+            <a
+              class="shell__link"
+              [routerLink]="entry.path"
+              routerLinkActive="shell__link--active"
+              [title]="entry.hint"
+              >{{ entry.label }}</a
+            >
+          }
+        }
       }
     </nav>
 
-    <div class="shell__who">
-      @if (session.signedIn()) {
-        <span class="shell__name">{{ session.displayName() }}</span>
-        <button class="shell__out" type="button" (click)="signOut()">Sign out</button>
-      } @else {
-        <a class="shell__out" routerLink="/sign-in">Sign in</a>
-      }
-    </div>
+    @if (session.signedIn()) {
+      <div class="shell__who">
+        <sg-link-indicator />
+        @for (entry of terminalNav(); track entry.path) {
+          <a
+            class="shell__link"
+            [routerLink]="entry.path"
+            routerLinkActive="shell__link--active"
+            [title]="entry.hint"
+            >{{ entry.label }}</a
+          >
+        }
+        <span class="shell__person">{{ session.displayName() }}</span>
+        <button type="button" class="shell__out" (click)="signOut()">Sign out</button>
+      </div>
+    }
   </header>
 
-  <main class="shell__main">
+  <main class="shell__body">
     <router-outlet />
   </main>
+
+  @if (session.signedIn()) {
+    <sg-command-palette />
+  }
+
+  <sg-notice-tray />
 </div>

@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { RouterLink } from '@angular/router';
 
 import {
   ChainNode,
@@ -33,7 +32,6 @@ const ROW_GAP = 18;
 @Component({
   selector: 'sg-chain-tree',
   standalone: true,
-  imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './chain-tree.component.html',
   styleUrl: './chain-tree.component.scss',
