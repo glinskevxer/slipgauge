@@ -1,0 +1,41 @@
+name: everything
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Early on a Monday, so a dependency that broke over the weekend is found
+    # before anybody starts work on top of it.
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: everything-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: the whole check script
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.18.1'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            registry-service/package-lock.json
+            registry-console/package-lock.json
+
+      - name: install
+        run: npm ci
+
+      - name: run everything a developer runs
+        run: npm run check

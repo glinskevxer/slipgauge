@@ -1,0 +1,65 @@
+name: registry-service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'registry-service/**'
+      - 'tests/backend/**'
+      - '.github/workflows/service.yml'
+  pull_request:
+    paths:
+      - 'registry-service/**'
+      - 'tests/backend/**'
+
+concurrency:
+  group: service-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.18.1'
+          cache: npm
+          cache-dependency-path: registry-service/package-lock.json
+
+      - name: install
+        working-directory: registry-service
+        run: npm ci
+
+      - name: typecheck
+        working-directory: registry-service
+        run: npm run typecheck
+
+      - name: unit tests
+        working-directory: registry-service
+        run: npm test -- --ci
+
+      # The integration tests unpack the PostgreSQL binaries that ship with
+      # embedded-postgres rather than asking for a service container, so
+      # nothing else has to be running for them.
+      - name: integration tests
+        working-directory: registry-service
+        run: npm run test:integration -- --ci
+
+      - name: build
+        working-directory: registry-service
+        run: npm run build
+
+      - name: upload the built service
+        uses: actions/upload-artifact@v4
+        with:
+          name: registry-service-dist
+          path: registry-service/dist/
+          retention-days: 7

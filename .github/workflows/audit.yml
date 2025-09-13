@@ -1,0 +1,40 @@
+name: dependency audit
+
+on:
+  schedule:
+    - cron: '41 6 * * 2'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: advisories and drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.18.1'
+
+      # Runtime dependencies only. A development only advisory is worth
+      # knowing about but is not worth failing a scheduled job over, and a
+      # job that fails every week is a job nobody reads.
+      - name: service advisories
+        working-directory: registry-service
+        run: npm audit --omit=dev --audit-level=moderate
+
+      - name: console advisories
+        working-directory: registry-console
+        run: npm audit --omit=dev --audit-level=moderate
+
+      - name: what has drifted
+        run: |
+          echo "### registry-service" >> "$GITHUB_STEP_SUMMARY"
+          (cd registry-service && npm outdated || true) >> "$GITHUB_STEP_SUMMARY"
+          echo "### registry-console" >> "$GITHUB_STEP_SUMMARY"
+          (cd registry-console && npm outdated || true) >> "$GITHUB_STEP_SUMMARY"

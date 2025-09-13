@@ -1,0 +1,30 @@
+{
+  "name": "slipgauge-registry",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Calibration and traceability registry for the Slipgauge metrology laboratory",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.11.1"
+  },
+  "scripts": {
+    "service": "npm --prefix registry-service run start:dev",
+    "service:build": "npm --prefix registry-service run build",
+    "console": "npm --prefix registry-console run start",
+    "console:build": "npm --prefix registry-console run build",
+    "test:backend": "npm --prefix registry-service test",
+    "test:backend:integration": "npm --prefix registry-service run test:integration",
+    "test:frontend": "npm --prefix registry-console test",
+    "check": "bash scripts/check.sh",
+    "e2e": "playwright test",
+    "e2e:report": "playwright show-report",
+    "postinstall": "npm --prefix registry-service install && npm --prefix registry-console install",
+    "audit": "npm --prefix registry-service audit --omit=dev --audit-level=moderate && npm --prefix registry-console audit --omit=dev --audit-level=moderate",
+    "outdated": "npm --prefix registry-service outdated || true"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.50.1",
+    "@types/node": "22.10.7",
+    "typescript": "5.7.3"
+  }
+}

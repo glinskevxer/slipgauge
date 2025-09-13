@@ -1,0 +1,58 @@
+name: end to end
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    name: drive the console
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.18.1'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            registry-console/package-lock.json
+
+      - name: install
+        run: npm ci
+
+      # Only chromium. The suite stubs every route, so a second engine would
+      # tell us about the browser rather than about the console.
+      - name: install the browser
+        run: npx playwright install --with-deps chromium
+
+      - name: run the suite
+        run: npm run e2e
+
+      - name: upload the report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: upload the traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7

@@ -1,0 +1,63 @@
+name: registry-console
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'registry-console/**'
+      - 'tests/frontend/**'
+      - '.github/workflows/console.yml'
+  pull_request:
+    paths:
+      - 'registry-console/**'
+      - 'tests/frontend/**'
+
+concurrency:
+  group: console-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: lint, test and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.18.1'
+          cache: npm
+          cache-dependency-path: registry-console/package-lock.json
+
+      - name: install
+        working-directory: registry-console
+        run: npm ci
+
+      - name: lint
+        working-directory: registry-console
+        run: npm run lint
+
+      - name: typecheck
+        working-directory: registry-console
+        run: npm run typecheck
+
+      - name: unit tests
+        working-directory: registry-console
+        run: npm test -- --ci --coverage
+
+      - name: production build
+        working-directory: registry-console
+        run: npm run build
+
+      - name: upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: console-coverage
+          path: registry-console/coverage/
+          retention-days: 7
