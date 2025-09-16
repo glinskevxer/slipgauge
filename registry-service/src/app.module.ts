@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { CalibrationModule } from './calibration/calibration.module';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
+import { DemoModule } from './demo/demo.module';
 import { ImpactModule } from './impact/impact.module';
 import { InstrumentModule } from './instrument/instrument.module';
 import { IntervalModule } from './interval/interval.module';
@@ -30,6 +31,7 @@ import { UsageModule } from './usage/usage.module';
     RecallModule,
     UsageModule,
     ImpactModule,
+    DemoModule,
   ],
 })
 export class AppModule {}
