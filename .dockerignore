@@ -1,0 +1,10 @@
+**/target/
+**/node_modules/
+**/dist/
+**/coverage/
+**/.angular/
+**/.git/
+**/.github/
+**/*.md
+**/.idea/
+**/.vscode/

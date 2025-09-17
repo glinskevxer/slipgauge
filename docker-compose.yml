@@ -1,0 +1,62 @@
+name: slipgauge-registry
+
+services:
+  postgres:
+    image: postgres:16.6-alpine
+    environment:
+      POSTGRES_DB: slipgauge
+      POSTGRES_USER: slipgauge
+      POSTGRES_PASSWORD: ${REGISTRY_DB_PASSWORD:-slipgauge}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./ops/postgres/tuning.conf:/etc/postgresql/conf.d/tuning.conf:ro
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U slipgauge -d slipgauge']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  registry-service:
+    build:
+      context: .
+      dockerfile: registry-service/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      REGISTRY_DB_URL: postgres://postgres:5432/slipgauge
+      REGISTRY_DB_USER: slipgauge
+      REGISTRY_DB_PASSWORD: ${REGISTRY_DB_PASSWORD:-slipgauge}
+      # No default. A service that boots with a shipped key is a service
+      # somebody will deploy with a shipped key.
+      REGISTRY_JWT_SECRET: ${REGISTRY_JWT_SECRET:?a signing key is required}
+      REGISTRY_ALLOWED_ORIGINS: ${REGISTRY_ALLOWED_ORIGINS:-http://localhost:4200}
+      LAB_ACCREDITATION_REF: ${LAB_ACCREDITATION_REF:-UNSET}
+    ports:
+      - '8080:8080'
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8080/health/readiness').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+
+  registry-console:
+    build:
+      context: .
+      dockerfile: registry-console/Dockerfile
+    depends_on:
+      registry-service:
+        condition: service_healthy
+    ports:
+      - '4200:8080'
+
+volumes:
+  pgdata:
