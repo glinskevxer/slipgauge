@@ -1,4 +1,5 @@
 import { MiddlewareConsumer, Global, Module, NestModule } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ImpactAssessment } from '../impact/impact-assessment.entity';
@@ -7,6 +8,7 @@ import { CorrelationIdMiddleware } from './correlation-id.middleware';
 import { HealthController } from './health.controller';
 import { MetricsController } from './metrics.controller';
 import { RegistryMetrics } from './registry-metrics.service';
+import { RequestTimingInterceptor } from './request-timing.interceptor';
 
 /**
  * Global, because the metrics service is written to from half the modules and
@@ -17,7 +19,7 @@ import { RegistryMetrics } from './registry-metrics.service';
 @Module({
   imports: [TypeOrmModule.forFeature([Instrument, ImpactAssessment])],
   controllers: [HealthController, MetricsController],
-  providers: [RegistryMetrics],
+  providers: [RegistryMetrics, { provide: APP_INTERCEPTOR, useClass: RequestTimingInterceptor }],
   exports: [RegistryMetrics],
 })
 export class ObservabilityModule implements NestModule {

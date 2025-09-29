@@ -9,3 +9,4 @@ export { HealthController, HealthReport } from './health.controller';
 export { MetricsController } from './metrics.controller';
 export { ObservabilityModule } from './observability.module';
 export { LATENCY_BUCKETS, RegistryMetrics } from './registry-metrics.service';
+export { RequestTimingInterceptor, SLOW_REQUEST_MS, routeOf } from './request-timing.interceptor';

@@ -146,6 +146,25 @@ describe('the counters the laboratory actually watches', () => {
     expect(scraped).not.toContain('registry_sign_in_total{outcome="allowed"}');
   });
 
+  it('times a request under the route template, not the url', async () => {
+    await http().get('/api/instruments').expect(200);
+
+    const scraped = await scrape();
+
+    expect(scraped).toContain('registry_request_seconds{');
+    expect(scraped).toContain('route="GET /api/instruments"');
+  });
+
+  it('keeps one series per endpoint however many instruments are read', async () => {
+    const first = await http().get('/api/instruments/by-tag/SG-950001').expect(200);
+    await http().get(`/api/instruments/${first.body.id}`).expect(200);
+
+    const scraped = await scrape();
+
+    expect(scraped).toContain('route="GET /api/instruments/by-tag/:assetTag"');
+    expect(scraped).not.toContain('SG-950001');
+  });
+
   it('never puts an asset tag or a username into a label', async () => {
     await http().post('/api/certificates').send(sheet()).expect(201);
 
