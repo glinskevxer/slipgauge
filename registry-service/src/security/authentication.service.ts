@@ -9,6 +9,7 @@ import { Clock } from '../config/clock';
 import { RegistryMetrics } from '../observability/registry-metrics.service';
 import type { SecurityConfig } from '../config/security.config';
 import { AppUser } from './app-user.entity';
+import { AttemptLimiter } from './attempt-limiter.service';
 import { AuditTrail } from './audit-trail.service';
 import type {
   AccountView,
@@ -32,6 +33,18 @@ class SignInRefused extends RegistryException {
   }
 }
 
+/** Refused because the caller is going too fast, not because it was wrong. */
+class TooManyAttempts extends RegistryException {
+  constructor(retryAfterSeconds: number) {
+    super(
+      ErrorCode.UNAUTHENTICATED,
+      HttpStatus.TOO_MANY_REQUESTS,
+      `too many sign in attempts, try again in ${retryAfterSeconds} seconds`,
+    );
+    this.with('retryAfterSeconds', retryAfterSeconds);
+  }
+}
+
 /**
  * Signs people in and manages accounts.
  *
@@ -49,6 +62,7 @@ export class AuthenticationService {
     private readonly tokens: TokenService,
     private readonly audit: AuditTrail,
     private readonly metrics: RegistryMetrics,
+    private readonly limiter: AttemptLimiter,
     private readonly config: ConfigService,
     private readonly clock: Clock,
   ) {}
@@ -57,8 +71,31 @@ export class AuthenticationService {
     return this.config.getOrThrow<SecurityConfig>('security').bcryptRounds;
   }
 
-  async signIn(request: SignInDto): Promise<TokenPair> {
+  /**
+   * The limiter is asked before the password is even hashed. Bcrypt at the
+   * configured work factor is the expensive part of this method, so a guessing
+   * run that gets that far is a denial of service whether or not it ever
+   * guesses right.
+   */
+  async signIn(request: SignInDto, from = 'unknown'): Promise<TokenPair> {
     const now = this.clock.now();
+
+    for (const key of [`user:${request.username}`, `from:${from}`]) {
+      const decision = this.limiter.record(key);
+
+      if (!decision.allowed) {
+        await this.audit.denied(
+          request.username,
+          'auth.signIn',
+          'user',
+          null,
+          `rate limited, ${decision.retryAfterSeconds}s to wait`,
+        );
+        this.metrics.signIn('denied');
+        throw new TooManyAttempts(decision.retryAfterSeconds);
+      }
+    }
+
     const user = await this.byUsername(request.username);
 
     if (!user) {
@@ -89,6 +126,8 @@ export class AuthenticationService {
 
     user.recordSuccess(now);
     await this.users.save(user);
+    this.limiter.clear(`user:${user.username}`);
+    this.limiter.clear(`from:${from}`);
     await this.audit.allowed(user.username, 'auth.signIn', 'user', String(user.id));
     this.metrics.signIn('allowed');
 

@@ -2,6 +2,7 @@ import request from 'supertest';
 import { hashSync } from 'bcryptjs';
 
 import { AppUser, MAX_FAILED_ATTEMPTS } from '@registry/security/app-user.entity';
+import { ATTEMPT_LIMIT, AttemptLimiter } from '@registry/security/attempt-limiter.service';
 import { AuditEvent, AuditOutcome } from '@registry/security/audit-event.entity';
 import { Role } from '@registry/security/role';
 import { TestApp, createTestApp } from '../support/test-app';
@@ -24,6 +25,7 @@ describe('signing in and what a token then lets you do', () => {
     await harness.reset();
     await harness.dataSource.query("delete from app_user where username <> 'admin'");
     await harness.dataSource.query('delete from audit_event');
+    harness.app.get(AttemptLimiter).reset();
   });
 
   const raw = () => request(harness.app.getHttpServer());
@@ -75,6 +77,30 @@ describe('signing in and what a token then lets you do', () => {
 
     expect(wrongPassword.body.detail).toBe(noSuchUser.body.detail);
     expect(wrongPassword.body.code).toBe('registry/unauthenticated');
+  });
+
+  it('refuses a caller going too fast before it even hashes a password', async () => {
+    await account('r.okonjo', Role.TECHNICIAN);
+
+    for (let attempt = 0; attempt < ATTEMPT_LIMIT; attempt++) {
+      await signIn('r.okonjo', 'wrong').expect(401);
+    }
+
+    const limited = await signIn('r.okonjo', 'wrong').expect(429);
+
+    expect(limited.body.detail).toContain('too many sign in attempts');
+    expect(limited.body.context.retryAfterSeconds).toBeGreaterThan(0);
+  });
+
+  it('clears the count on a good password so a fat finger costs nothing', async () => {
+    await account('r.okonjo', Role.TECHNICIAN);
+
+    await signIn('r.okonjo', 'wrong').expect(401);
+    await signIn('r.okonjo').expect(200);
+
+    for (let attempt = 0; attempt < ATTEMPT_LIMIT - 1; attempt++) {
+      await signIn('r.okonjo').expect(200);
+    }
   });
 
   it('locks the account after the run of wrong passwords the policy allows', async () => {

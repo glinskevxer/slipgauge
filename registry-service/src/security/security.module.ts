@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppUser } from './app-user.entity';
 import { AuditEvent } from './audit-event.entity';
 import { AccountsController, AuditController } from './accounts.controller';
+import { AttemptLimiter } from './attempt-limiter.service';
 import { AuditTrail } from './audit-trail.service';
 import { AuthenticationController } from './authentication.controller';
 import { AuthenticationService } from './authentication.service';
@@ -24,8 +25,9 @@ import { TokenService } from './token.service';
     AuthenticationService,
     TokenService,
     AuditTrail,
+    AttemptLimiter,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
-  exports: [TypeOrmModule, AuthenticationService, TokenService, AuditTrail],
+  exports: [TypeOrmModule, AuthenticationService, TokenService, AuditTrail, AttemptLimiter],
 })
 export class SecurityModule {}
