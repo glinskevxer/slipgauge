@@ -1,8 +1,20 @@
-import { Controller, DefaultValuePipe, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
+import {
+  Controller,
+  DefaultValuePipe,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+  Res,
+} from '@nestjs/common';
+import type { Response } from 'express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { Role } from '../security/role';
 import { RequireRoles } from '../security/roles.decorator';
+import { contentDisposition, exportFilename, toCsv } from '../common/csv';
+import { RECALL_EXPORT_COLUMNS } from '../common/export-columns';
 import { IntervalDecision } from '../interval/interval-decision.entity';
 import { IntervalService } from '../interval/interval.service';
 import { RecallService } from './recall.service';
@@ -54,6 +66,25 @@ export class RecallController {
     @Query('horizonDays', new DefaultValuePipe(60), ParseIntPipe) horizonDays: number,
   ): Promise<RecallEntry[]> {
     return this.recalls.board(horizonDays);
+  }
+
+  /**
+   * The board as a spreadsheet. The chase list is what actually gets emailed
+   * round on a Monday, so the horizon defaults to the same seven days.
+   */
+  @Get('export.csv')
+  async exportCsv(
+    @Query('horizonDays', new DefaultValuePipe(7), ParseIntPipe) horizonDays: number,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<string> {
+    const entries = await this.recalls.board(horizonDays);
+    const filename = exportFilename('Recalls', new Date().toISOString().slice(0, 10));
+
+    response.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    response.setHeader('Content-Disposition', contentDisposition(filename));
+    response.setHeader('X-Row-Count', String(entries.length));
+
+    return toCsv(entries, RECALL_EXPORT_COLUMNS);
   }
 
   @Get('chase')
