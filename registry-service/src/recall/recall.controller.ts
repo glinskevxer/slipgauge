@@ -11,14 +11,17 @@ import {
 import type { Response } from 'express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
-import { Role } from '../security/role';
-import { RequireRoles } from '../security/roles.decorator';
 import { contentDisposition, exportFilename, toCsv } from '../common/csv';
 import { RECALL_EXPORT_COLUMNS } from '../common/export-columns';
 import { IntervalDecision } from '../interval/interval-decision.entity';
 import { IntervalService } from '../interval/interval.service';
-import { RecallService } from './recall.service';
+import { CurrentUser } from '../security/current-user.decorator';
+import { Role } from '../security/role';
+import { RequireRoles } from '../security/roles.decorator';
+import type { Principal } from '../security/token.service';
 import type { RecallEntry } from './recall-standing';
+import { RecallService } from './recall.service';
+import { RecallSweepService, SweepReport } from './recall-sweep.service';
 
 /** The parts of a decision the console shows on the interval timeline. */
 export interface IntervalSummary {
@@ -59,6 +62,7 @@ export class RecallController {
   constructor(
     private readonly recalls: RecallService,
     private readonly intervals: IntervalService,
+    private readonly sweeps: RecallSweepService,
   ) {}
 
   @Get()
@@ -108,6 +112,16 @@ export class RecallController {
     @Param('instrumentId', ParseIntPipe) instrumentId: number,
   ): Promise<IntervalSummary> {
     return toIntervalSummary(await this.intervals.reassess(instrumentId));
+  }
+
+  /**
+   * The nightly sweep, on demand. A quality manager asks for this before an
+   * assessment rather than taking last night's word for it.
+   */
+  @RequireRoles(Role.QUALITY_MANAGER)
+  @Post('sweep')
+  sweep(@CurrentUser() principal: Principal): Promise<SweepReport> {
+    return this.sweeps.sweep(principal.username);
   }
 
   @Get('instruments/:instrumentId/decisions')
