@@ -2,9 +2,13 @@ import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { Role } from '../security/role';
+import { CurrentUser } from '../security/current-user.decorator';
 import { RequireRoles } from '../security/roles.decorator';
+import type { Principal } from '../security/token.service';
 import { BadRequestError } from '../common/errors';
+import { AttachmentService } from './attachment.service';
 import { CalibrationService } from './calibration.service';
+import { AttachFileDto, AttachmentView } from './dto/attach-file.dto';
 import type { CertificateView } from './dto/certificate.views';
 import { RecordCalibrationDto } from './dto/record-calibration.dto';
 
@@ -17,12 +21,36 @@ import { RecordCalibrationDto } from './dto/record-calibration.dto';
 @ApiBearerAuth('registry-token')
 @Controller('certificates')
 export class CalibrationController {
-  constructor(private readonly calibrations: CalibrationService) {}
+  constructor(
+    private readonly calibrations: CalibrationService,
+    private readonly attachments: AttachmentService,
+  ) {}
 
   @RequireRoles(Role.TECHNICIAN)
   @Post()
   record(@Body() request: RecordCalibrationDto): Promise<CertificateView> {
     return this.calibrations.record(request);
+  }
+
+  @Get(':id/attachments')
+  attachments_(@Param('id', ParseIntPipe) id: number): Promise<AttachmentView[]> {
+    return this.attachments.forCertificate(id);
+  }
+
+  /**
+   * Records a file the document store already holds. Nothing is uploaded
+   * through the register: the store has its own upload path, its own virus
+   * scanning and its own retention, and putting a second one here would mean
+   * two things to keep in step.
+   */
+  @RequireRoles(Role.TECHNICIAN)
+  @Post(':id/attachments')
+  attach(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() request: AttachFileDto,
+    @CurrentUser() principal: Principal,
+  ): Promise<AttachmentView> {
+    return this.attachments.attach(id, request, principal.username);
   }
 
   @Get(':id')
