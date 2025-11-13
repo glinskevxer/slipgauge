@@ -7,6 +7,7 @@ import { UsageLog1736000000008 } from './1736000000008-UsageLog';
 import { ImpactAssessments1736000000009 } from './1736000000009-ImpactAssessments';
 import { Accounts1736000000010 } from './1736000000010-Accounts';
 import { Attachments1736000000011 } from './1736000000011-Attachments';
+import { CustomerJobs1736000000012 } from './1736000000012-CustomerJobs';
 import { ProfileClassLinks1736000000004 } from './1736000000004-ProfileClassLinks';
 import { ToleranceProfiles1736000000003 } from './1736000000003-ToleranceProfiles';
 
@@ -29,4 +30,5 @@ export const MIGRATIONS = [
   ImpactAssessments1736000000009,
   Accounts1736000000010,
   Attachments1736000000011,
+  CustomerJobs1736000000012,
 ];
