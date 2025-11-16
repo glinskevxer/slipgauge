@@ -8,6 +8,7 @@ import { ImpactAssessments1736000000009 } from './1736000000009-ImpactAssessment
 import { Accounts1736000000010 } from './1736000000010-Accounts';
 import { Attachments1736000000011 } from './1736000000011-Attachments';
 import { CustomerJobs1736000000012 } from './1736000000012-CustomerJobs';
+import { ContractReview1736000000013 } from './1736000000013-ContractReview';
 import { ProfileClassLinks1736000000004 } from './1736000000004-ProfileClassLinks';
 import { ToleranceProfiles1736000000003 } from './1736000000003-ToleranceProfiles';
 
@@ -31,4 +32,5 @@ export const MIGRATIONS = [
   Accounts1736000000010,
   Attachments1736000000011,
   CustomerJobs1736000000012,
+  ContractReview1736000000013,
 ];
