@@ -6,6 +6,7 @@ import { DatabaseModule } from './database/database.module';
 import { DemoModule } from './demo/demo.module';
 import { ImpactModule } from './impact/impact.module';
 import { InstrumentModule } from './instrument/instrument.module';
+import { JobsModule } from './jobs/jobs.module';
 import { IntervalModule } from './interval/interval.module';
 import { ObservabilityModule } from './observability/observability.module';
 import { RecallModule } from './recall/recall.module';
@@ -25,6 +26,7 @@ import { UsageModule } from './usage/usage.module';
     ObservabilityModule,
     SecurityModule,
     InstrumentModule,
+    JobsModule,
     CalibrationModule,
     TraceabilityModule,
     IntervalModule,
