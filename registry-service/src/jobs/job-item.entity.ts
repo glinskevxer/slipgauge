@@ -1,6 +1,7 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, RelationId } from 'typeorm';
 
 import { RuleViolationError } from '../common/errors';
+import { numericTransformer } from '../common/numeric';
 import { InstrumentClass } from '../instrument/instrument-class.entity';
 import { Instrument } from '../instrument/instrument.entity';
 import { ItemCondition, JobService } from './job.enums';
@@ -71,6 +72,25 @@ export class JobItem {
 
   @Column({ type: 'varchar', length: 400, nullable: true })
   note: string | null;
+
+  /**
+   * The top of the range the customer says the item reads to. Written off the
+   * label rather than measured, and only used by contract review to ask whether
+   * the laboratory covers it.
+   */
+  @Column({
+    name: 'range_high',
+    type: 'numeric',
+    precision: 18,
+    scale: 6,
+    nullable: true,
+    transformer: numericTransformer,
+  })
+  rangeHigh: number | null;
+
+  /** The customer stated what they want it held to, which a verification needs. */
+  @Column({ name: 'tolerance_stated', type: 'boolean', default: false })
+  toleranceStated: boolean;
 
   identifiedAs(manufacturer: string | null, model: string | null, serial: string | null): this {
     this.manufacturer = manufacturer;
@@ -153,5 +173,7 @@ export function jobItem(
   item.condition = ItemCondition.SERVICEABLE;
   item.accessories = null;
   item.note = null;
+  item.rangeHigh = null;
+  item.toleranceStated = false;
   return item;
 }

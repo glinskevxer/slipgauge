@@ -1,13 +1,18 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { InstrumentClass } from '../instrument/instrument-class.entity';
 import { InstrumentModule } from '../instrument/instrument.module';
 import { ContractReview } from './contract-review.entity';
 import { Customer } from './customer.entity';
 import { CustomerController } from './customer.controller';
 import { CustomerService } from './customer.service';
 import { Job } from './job.entity';
+import { JobController } from './job.controller';
 import { JobItem } from './job-item.entity';
+import { JobMapper } from './job.mapper';
+import { JobReferenceService } from './job-reference.service';
+import { JobService } from './job.service';
 
 /**
  * The job desk. Everything a customer's item does between arriving at goods
@@ -19,9 +24,9 @@ import { JobItem } from './job-item.entity';
  * equipment carry on with no job at all.
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([Customer, Job, JobItem, ContractReview]), InstrumentModule],
-  controllers: [CustomerController],
-  providers: [CustomerService],
-  exports: [TypeOrmModule, CustomerService],
+  imports: [TypeOrmModule.forFeature([Customer, Job, JobItem, ContractReview, InstrumentClass]), InstrumentModule],
+  controllers: [CustomerController, JobController],
+  providers: [CustomerService, JobService, JobReferenceService, JobMapper],
+  exports: [TypeOrmModule, CustomerService, JobService, JobMapper],
 })
 export class JobsModule {}
