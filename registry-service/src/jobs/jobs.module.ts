@@ -3,7 +3,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { InstrumentClass } from '../instrument/instrument-class.entity';
 import { InstrumentModule } from '../instrument/instrument.module';
+import { ToleranceProfile } from '../calibration/tolerance-profile.entity';
+import { Instrument } from '../instrument/instrument.entity';
+import { CapabilityService } from './capability.service';
 import { ContractReview } from './contract-review.entity';
+import { ContractReviewService } from './contract-review.service';
 import { Customer } from './customer.entity';
 import { CustomerController } from './customer.controller';
 import { CustomerService } from './customer.service';
@@ -24,9 +28,24 @@ import { JobService } from './job.service';
  * equipment carry on with no job at all.
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([Customer, Job, JobItem, ContractReview, InstrumentClass]), InstrumentModule],
+  imports: [TypeOrmModule.forFeature([
+      Customer,
+      Job,
+      JobItem,
+      ContractReview,
+      InstrumentClass,
+      ToleranceProfile,
+      Instrument,
+    ]), InstrumentModule],
   controllers: [CustomerController, JobController],
-  providers: [CustomerService, JobService, JobReferenceService, JobMapper],
-  exports: [TypeOrmModule, CustomerService, JobService, JobMapper],
+  providers: [
+    CustomerService,
+    JobService,
+    JobReferenceService,
+    JobMapper,
+    CapabilityService,
+    ContractReviewService,
+  ],
+  exports: [TypeOrmModule, CustomerService, JobService, JobMapper, CapabilityService],
 })
 export class JobsModule {}

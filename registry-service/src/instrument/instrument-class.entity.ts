@@ -35,6 +35,17 @@ export class InstrumentClass extends AuditedEntity {
   criticality: Criticality;
 
   /**
+   * The class sits on the schedule of accreditation. Work outside it is still
+   * done and still certified, it simply does not carry the mark.
+   */
+  @Column({ type: 'boolean', default: false })
+  accredited: boolean;
+
+  /** The controlled document the work is carried out to, when there is one. */
+  @Column({ name: 'method_reference', type: 'varchar', length: 120, nullable: true })
+  methodReference: string | null;
+
+  /**
    * Interval boundaries only make sense together, so they are set together and
    * rejected together. The database carries the same check, but failing here
    * gives the caller a usable message instead of a constraint name.

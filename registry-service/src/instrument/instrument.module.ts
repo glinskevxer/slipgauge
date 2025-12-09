@@ -15,6 +15,12 @@ import { StorageLocationService } from './storage-location.service';
   imports: [TypeOrmModule.forFeature([Instrument, InstrumentClass, StorageLocation])],
   controllers: [InstrumentController, ReferenceController],
   providers: [InstrumentService, InstrumentMapper, AssetTagService, StorageLocationService],
-  exports: [TypeOrmModule, InstrumentService, InstrumentMapper, StorageLocationService],
+  exports: [
+    TypeOrmModule,
+    InstrumentService,
+    InstrumentMapper,
+    StorageLocationService,
+    AssetTagService,
+  ],
 })
 export class InstrumentModule {}
