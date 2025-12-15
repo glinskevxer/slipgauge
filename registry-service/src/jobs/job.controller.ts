@@ -21,6 +21,8 @@ import { AddJobItemDto, BookInJobDto, RepromiseJobDto } from './dto/book-in.dto'
 import type { JobDeskSummary, JobSummary, JobView } from './dto/job.views';
 import { DeclineJobDto, ReviewJobDto } from './dto/review-job.dto';
 import type { ReviewPreview } from './dto/review-job.dto';
+import { JobProgressService } from './job-progress.service';
+import type { LineProgress } from './job-progress.service';
 import { toReviewView } from './job.mapper';
 import type { ContractReviewView } from './dto/job.views';
 import { JobService } from './job.service';
@@ -33,6 +35,7 @@ export class JobController {
   constructor(
     private readonly jobs: JobService,
     private readonly reviews: ContractReviewService,
+    private readonly progress_: JobProgressService,
   ) {}
 
   /** The counts across the top of the desk. */
@@ -106,6 +109,30 @@ export class JobController {
     @CurrentUser() user: Principal,
   ): Promise<JobView> {
     return this.reviews.decline(reference, user.username, request);
+  }
+
+  /** Where every measurement line has got to. */
+  @Get(':reference/progress')
+  progress(@Param('reference') reference: string): Promise<LineProgress[]> {
+    return this.progress_.progressOf(reference);
+  }
+
+  @RequireRoles(Role.TECHNICIAN)
+  @Post(':reference/start')
+  start(@Param('reference') reference: string): Promise<JobView> {
+    return this.progress_.start(reference);
+  }
+
+  @RequireRoles(Role.TECHNICIAN)
+  @Post(':reference/complete')
+  complete(@Param('reference') reference: string): Promise<JobView> {
+    return this.progress_.complete(reference);
+  }
+
+  @RequireRoles(Role.TECHNICIAN)
+  @Post(':reference/dispatch')
+  dispatch(@Param('reference') reference: string): Promise<JobView> {
+    return this.progress_.dispatch(reference);
   }
 
   @RequireRoles(Role.TECHNICIAN)

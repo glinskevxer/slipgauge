@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { InstrumentClass } from '../instrument/instrument-class.entity';
 import { InstrumentModule } from '../instrument/instrument.module';
+import { CalibrationCertificate } from '../calibration/calibration-certificate.entity';
 import { ToleranceProfile } from '../calibration/tolerance-profile.entity';
 import { Instrument } from '../instrument/instrument.entity';
 import { CapabilityService } from './capability.service';
@@ -15,6 +16,7 @@ import { Job } from './job.entity';
 import { JobController } from './job.controller';
 import { JobItem } from './job-item.entity';
 import { JobMapper } from './job.mapper';
+import { JobProgressService } from './job-progress.service';
 import { JobReferenceService } from './job-reference.service';
 import { JobService } from './job.service';
 
@@ -36,6 +38,7 @@ import { JobService } from './job.service';
       InstrumentClass,
       ToleranceProfile,
       Instrument,
+      CalibrationCertificate,
     ]), InstrumentModule],
   controllers: [CustomerController, JobController],
   providers: [
@@ -45,6 +48,7 @@ import { JobService } from './job.service';
     JobMapper,
     CapabilityService,
     ContractReviewService,
+    JobProgressService,
   ],
   exports: [TypeOrmModule, CustomerService, JobService, JobMapper, CapabilityService],
 })
