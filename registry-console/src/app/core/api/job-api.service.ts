@@ -17,12 +17,12 @@ import { RegistryHttpService } from './registry-http.service';
 export interface ReviewPreview {
   readonly reference: string;
   readonly outcome: string;
-  readonly findings: readonly {
+  readonly findings: ReadonlyArray<{
     readonly clause: string;
     readonly severity: string;
     readonly lineNumber: number | null;
     readonly detail: string;
-  }[];
+  }>;
   readonly acceptable: boolean;
   readonly decisionRulePending: boolean;
 }

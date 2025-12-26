@@ -34,6 +34,12 @@ export const APP_ROUTES: Routes = [
       import('./features/certificate/certificate.routes').then((m) => m.CERTIFICATE_ROUTES),
   },
   {
+    path: 'jobs',
+    title: 'Job desk',
+    canActivate: [signedInGuard],
+    loadChildren: () => import('./features/jobs/jobs.routes').then((m) => m.JOB_ROUTES),
+  },
+  {
     path: 'recalls',
     title: 'Recall board',
     canActivate: [signedInGuard],

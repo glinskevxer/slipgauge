@@ -212,7 +212,7 @@ export function awaitingDesk(state: JobState): boolean {
 /** The four review clauses, in the order they are answered. */
 export function reviewClauses(
   review: ContractReviewView,
-): readonly { readonly label: string; readonly answered: boolean }[] {
+): ReadonlyArray<{ readonly label: string; readonly answered: boolean }> {
   return [
     { label: 'Requirements defined', answered: review.requirementsDefined },
     { label: 'Capability confirmed', answered: review.capabilityConfirmed },

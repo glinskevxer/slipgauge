@@ -1,0 +1,125 @@
+<section class="desk">
+  <header class="desk__head">
+    <div>
+      <h1>Job desk</h1>
+      <p class="desk__sub">Customer work that is still in the building.</p>
+    </div>
+
+    @if (store.summary(); as summary) {
+      <div class="tallies">
+        <div class="tally" [class.tally--bad]="summary.late > 0">
+          <span class="tally__count">{{ summary.late }}</span>
+          <span class="tally__label">late</span>
+        </div>
+        <div class="tally" [class.tally--warn]="summary.dueToday > 0">
+          <span class="tally__count">{{ summary.dueToday }}</span>
+          <span class="tally__label">due today</span>
+        </div>
+        <div class="tally">
+          <span class="tally__count">{{ summary.awaitingReview }}</span>
+          <span class="tally__label">to review</span>
+        </div>
+        <div class="tally">
+          <span class="tally__count">{{ summary.readyToDispatch }}</span>
+          <span class="tally__label">to send back</span>
+        </div>
+      </div>
+    }
+  </header>
+
+  <nav class="lanes" aria-label="Job lanes">
+    @for (lane of lanes; track lane.key) {
+      <button
+        type="button"
+        class="lane"
+        [class.lane--on]="store.lane() === lane.key"
+        [attr.aria-pressed]="store.lane() === lane.key"
+        [title]="lane.hint"
+        (click)="store.show(lane.key)"
+      >
+        {{ lane.label }}
+        @if (countFor(lane.key) !== null) {
+          <span class="lane__count">{{ countFor(lane.key) }}</span>
+        }
+      </button>
+    }
+  </nav>
+
+  <div class="filter">
+    <label class="filter__field">
+      Customer
+      <input
+        type="search"
+        name="customer"
+        placeholder="ACME"
+        [value]="customerFilter()"
+        (change)="applyCustomer($any($event.target).value)"
+      />
+    </label>
+    @if (store.customer()) {
+      <button type="button" class="filter__clear" (click)="clearCustomer()">
+        Clear {{ store.customer() }}
+      </button>
+    }
+  </div>
+
+  @if (store.error(); as failure) {
+    <p class="desk__error" role="alert">{{ failure.message }}</p>
+  }
+
+  @if (store.loading()) {
+    <p class="desk__loading">Reading the desk.</p>
+  } @else if (store.isEmpty()) {
+    <sg-empty-state
+      headline="Nothing in this lane"
+      detail="Either it has all gone back, or nothing has been booked in yet."
+    />
+  } @else {
+    <table class="jobs">
+      <caption class="jobs__caption">
+        {{ store.jobs().length }} of {{ store.total() }} jobs
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Job</th>
+          <th scope="col">Customer</th>
+          <th scope="col">Items</th>
+          <th scope="col">In</th>
+          <th scope="col">Promised</th>
+          <th scope="col">Standing</th>
+          <th scope="col">State</th>
+          <th scope="col"><span class="sr-only">Next move</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (job of store.worstFirst(); track job.id) {
+          <tr>
+            <th scope="row">
+              <a [routerLink]="['/jobs', job.reference]">{{ job.reference }}</a>
+              @if (job.priority !== 'STANDARD') {
+                <span class="flag">{{ priorityLabel(job.priority) }}</span>
+              }
+            </th>
+            <td>{{ job.customerName }}</td>
+            <td class="num">{{ job.itemCount }}</td>
+            <td>{{ job.receivedOn | date: 'd MMM' }}</td>
+            <td>{{ job.promisedOn | date: 'd MMM' }}</td>
+            <td>
+              <span class="standing" [class]="'standing--' + latenessTone(job)">
+                {{ latenessInWords(job) }}
+              </span>
+            </td>
+            <td>{{ stateLabel(job.state) }}</td>
+            <td class="jobs__do">
+              @if (nextMove(job.state); as move) {
+                <button type="button" (click)="store.move(job.reference, move.action)">
+                  {{ move.label }}
+                </button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</section>

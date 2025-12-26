@@ -34,6 +34,7 @@ export class AppComponent {
   protected readonly navigation = signal<readonly NavEntry[]>([
     { path: '/overview', label: 'Overview', hint: 'What is coming and what is on fire' },
     { path: '/register', label: 'Register', hint: 'Every instrument the lab holds' },
+    { path: '/jobs', label: 'Jobs', hint: 'Customer work that is still in the building' },
     { path: '/certificates/new', label: 'New sheet', hint: 'Enter a calibration result' },
     { path: '/recalls', label: 'Recalls', hint: 'What is due and what is already late' },
     { path: '/recalls/capacity', label: 'Capacity', hint: 'Whether the benches can take it' },
