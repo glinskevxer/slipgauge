@@ -49,8 +49,8 @@
 }
 
 .tally--warn {
-  border-color: var(--sg-warn);
-  color: var(--sg-warn);
+  border-color: var(--sg-marginal);
+  color: var(--sg-marginal);
 }
 
 .tally__count {
@@ -78,7 +78,7 @@
   padding: var(--sg-space-1) var(--sg-space-3);
   background: var(--sg-surface);
   border: 1px solid var(--sg-border);
-  border-radius: var(--sg-radius-pill);
+  border-radius: var(--sg-radius-lg);
   color: var(--sg-ink);
   cursor: pointer;
 }
@@ -155,9 +155,9 @@
 .flag {
   margin-left: var(--sg-space-1);
   padding: 0 var(--sg-space-1);
-  background: var(--sg-warn-soft);
+  background: var(--sg-marginal-soft);
   border-radius: var(--sg-radius-sm);
-  color: var(--sg-warn);
+  color: var(--sg-marginal);
   font-size: var(--sg-text-xs);
 }
 
@@ -170,7 +170,7 @@
 }
 
 .standing--warn {
-  color: var(--sg-warn);
+  color: var(--sg-marginal);
 }
 
 .standing--quiet {

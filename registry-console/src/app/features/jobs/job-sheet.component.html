@@ -1,0 +1,242 @@
+@if (store.loading()) {
+  <p class="sheet__loading">Reading the job.</p>
+} @else {
+  @if (store.error(); as failure) {
+    <sg-empty-state headline="That job is not here" [detail]="failure.message" />
+  }
+  @if (store.job(); as job) {
+  <section class="sheet">
+    <header class="sheet__head">
+      <div>
+        <p class="sheet__crumb"><a routerLink="/jobs">Job desk</a></p>
+        <h1>{{ job.reference }}</h1>
+        <p class="sheet__sub">
+          {{ job.customerName }} ({{ job.customerCode }}), booked in by {{ job.receivedBy }}
+          on {{ job.receivedOn | date: 'd MMM y' }}
+        </p>
+      </div>
+
+      <dl class="facts">
+        <div>
+          <dt>State</dt>
+          <dd>{{ stateLabel(job.state) }}</dd>
+        </div>
+        <div>
+          <dt>Priority</dt>
+          <dd>{{ priorityLabel(job.priority) }}</dd>
+        </div>
+        <div>
+          <dt>Promised</dt>
+          <dd>{{ job.promisedOn | date: 'd MMM y' }}</dd>
+        </div>
+        <div>
+          <dt>Standing</dt>
+          <dd class="standing" [class]="'standing--' + latenessTone(job)">
+            {{ latenessInWords(job) }}
+          </dd>
+        </div>
+      </dl>
+    </header>
+
+    @if (job.instructions) {
+      <p class="sheet__instructions">{{ job.instructions }}</p>
+    }
+
+    @if (store.review(); as review) {
+      <section class="panel" aria-labelledby="review-heading">
+        <h2 id="review-heading">Contract review</h2>
+        <p class="panel__lead">
+          {{ outcomeLabel(review.outcome) }} by {{ review.reviewedBy }} on
+          {{ review.reviewedOn | date: 'd MMM y' }}
+        </p>
+
+        <ul class="clauses">
+          @for (clause of reviewClauses(review); track clause.label) {
+            <li [class.clauses__no]="!clause.answered">
+              <span aria-hidden="true">{{ clause.answered ? 'yes' : 'no' }}</span>
+              {{ clause.label }}
+            </li>
+          }
+        </ul>
+
+        @if (review.acceptancePolicy) {
+          <p class="panel__rule">Decision rule: {{ review.acceptancePolicy }}</p>
+        }
+        @if (review.methodReference) {
+          <p class="panel__rule">Method: {{ review.methodReference }}</p>
+        }
+        @if (review.declinedReason) {
+          <p class="panel__declined">{{ review.declinedReason }}</p>
+        }
+        @if (review.findings.length) {
+          <ul class="findings">
+            @for (finding of review.findings; track finding) {
+              <li>{{ finding }}</li>
+            }
+          </ul>
+        }
+      </section>
+    } @else if (store.awaitingReview()) {
+      <section class="panel panel--doing" aria-labelledby="do-review-heading">
+        <h2 id="do-review-heading">Contract review</h2>
+
+        @if (store.preview(); as preview) {
+          <p class="panel__lead">
+            As it stands this job would be {{ outcomeLabel($any(preview.outcome)) }}.
+            @if (preview.decisionRulePending) {
+              The decision rule has not been judged yet.
+            }
+          </p>
+
+          @if (preview.findings.length) {
+            <ul class="findings">
+              @for (finding of preview.findings; track finding.detail) {
+                <li [class]="severityClass(finding.severity)">
+                  <span class="findings__clause">{{ finding.clause }}</span>
+                  {{ finding.detail }}
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="panel__clean">Nothing stands against this job.</p>
+          }
+        }
+
+        <fieldset class="rules">
+          <legend>Decision rule agreed with the customer</legend>
+          @for (policy of policies; track policy.key) {
+            <label class="rules__choice" [title]="policy.hint">
+              <input
+                type="radio"
+                name="policy"
+                [value]="policy.key"
+                [checked]="store.policy() === policy.key"
+                (change)="choose(policy.key)"
+              />
+              {{ policy.label }}
+            </label>
+          }
+        </fieldset>
+
+        <label class="field">
+          Method reference
+          <input
+            type="text"
+            name="method"
+            placeholder="SLP-WI-014"
+            [value]="methodReference()"
+            (input)="methodReference.set($any($event.target).value)"
+          />
+        </label>
+
+        <label class="field">
+          Anything to record
+          <textarea
+            name="comment"
+            rows="2"
+            [value]="comment()"
+            (input)="comment.set($any($event.target).value)"
+          ></textarea>
+        </label>
+
+        <div class="panel__do">
+          <button type="button" class="primary" [disabled]="store.saving()" (click)="record()">
+            Record the review
+          </button>
+        </div>
+
+        <details class="turn-away">
+          <summary>Turn this job away instead</summary>
+          <label class="field">
+            Why
+            <input
+              type="text"
+              name="declineReason"
+              [value]="declineReason()"
+              (input)="declineReason.set($any($event.target).value)"
+            />
+          </label>
+          <button
+            type="button"
+            class="danger"
+            [disabled]="store.saving() || !declineReason().trim()"
+            (click)="decline()"
+          >
+            Decline
+          </button>
+        </details>
+      </section>
+    }
+
+    <section class="panel" aria-labelledby="lines-heading">
+      <h2 id="lines-heading">What came in</h2>
+      <table class="lines">
+        <thead>
+          <tr>
+            <th scope="col">Line</th>
+            <th scope="col">Service</th>
+            <th scope="col">Item</th>
+            <th scope="col">Class</th>
+            <th scope="col">Condition</th>
+            <th scope="col">Register</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (line of job.items; track line.id) {
+            <tr>
+              <th scope="row">{{ line.lineNumber }}</th>
+              <td>{{ serviceLabel(line.service) }}</td>
+              <td>
+                {{ line.description }}
+                @if (line.serialNumber) {
+                  <span class="lines__serial">s/n {{ line.serialNumber }}</span>
+                }
+              </td>
+              <td>{{ line.classCode ?? 'not identified' }}</td>
+              <td>{{ conditionLabel(line.condition) }}</td>
+              <td>
+                @if (line.assetTag) {
+                  <a [routerLink]="['/register', line.assetTag]">{{ line.assetTag }}</a>
+                } @else {
+                  <span class="lines__none">not raised</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+
+    @if (store.progress().length) {
+      <section class="panel" aria-labelledby="progress-heading">
+        <h2 id="progress-heading">Where the work has got to</h2>
+        <ul class="progress">
+          @for (line of store.progress(); track line.lineNumber) {
+            <li [class.progress--done]="line.done">
+              Line {{ line.lineNumber }}
+              @if (line.done) {
+                certified as {{ line.certificateNumber }}
+              } @else {
+                {{ line.reason }}
+              }
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
+    @if (nextMove(job.state); as move) {
+      <div class="sheet__do">
+        <button type="button" class="primary" [disabled]="store.saving()" (click)="store.move(move.action)">
+          {{ move.label }}
+        </button>
+        @if (job.state === 'IN_PROGRESS' && !store.completable()) {
+          <p class="sheet__blocked">
+            {{ store.outstanding().length }} line(s) still have no certificate.
+          </p>
+        }
+      </div>
+    }
+  </section>
+  }
+}

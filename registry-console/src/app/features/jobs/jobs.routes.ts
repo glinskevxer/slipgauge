@@ -6,4 +6,9 @@ export const JOB_ROUTES: Routes = [
     title: 'Job desk',
     loadComponent: () => import('./job-desk.component').then((m) => m.JobDeskComponent),
   },
+  {
+    path: ':reference',
+    title: 'Job',
+    loadComponent: () => import('./job-sheet.component').then((m) => m.JobSheetComponent),
+  },
 ];
