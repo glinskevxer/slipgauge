@@ -11,6 +11,7 @@ import { CustomerJobs1736000000012 } from './1736000000012-CustomerJobs';
 import { ContractReview1736000000013 } from './1736000000013-ContractReview';
 import { JobItemRange1736000000014 } from './1736000000014-JobItemRange';
 import { ClassCapability1736000000015 } from './1736000000015-ClassCapability';
+import { Competence1736000000016 } from './1736000000016-Competence';
 import { ProfileClassLinks1736000000004 } from './1736000000004-ProfileClassLinks';
 import { ToleranceProfiles1736000000003 } from './1736000000003-ToleranceProfiles';
 
@@ -37,4 +38,5 @@ export const MIGRATIONS = [
   ContractReview1736000000013,
   JobItemRange1736000000014,
   ClassCapability1736000000015,
+  Competence1736000000016,
 ];
