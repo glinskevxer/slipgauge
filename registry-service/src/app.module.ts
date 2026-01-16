@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { CalibrationModule } from './calibration/calibration.module';
+import { CompetenceModule } from './competence/competence.module';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
 import { DemoModule } from './demo/demo.module';
@@ -26,6 +27,7 @@ import { UsageModule } from './usage/usage.module';
     ObservabilityModule,
     SecurityModule,
     InstrumentModule,
+    CompetenceModule,
     JobsModule,
     CalibrationModule,
     TraceabilityModule,

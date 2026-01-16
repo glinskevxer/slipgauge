@@ -14,6 +14,9 @@ export enum Discipline {
   TIME = 'TIME',
 }
 
+/** Every discipline, in the order the schedule of accreditation lists them. */
+export const ALL_DISCIPLINES: readonly Discipline[] = Object.values(Discipline);
+
 /**
  * How much of the laboratory's output depends on the instrument being right.
  * Criticality caps how far the interval engine may stretch a class, and it
