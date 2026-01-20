@@ -4,6 +4,7 @@ import { IntervalBasis, IntervalDecision, IntervalService } from '@registry/inte
 import { StandardRole } from '@registry/traceability';
 import { Role } from '@registry/security/role';
 import { RegisterFixtures } from '../support/fixtures';
+import { CompetenceFixtures } from '../support/competence-fixtures';
 import { TestApp, createTestApp } from '../support/test-app';
 
 describe('recording what the interval engine decided', () => {
@@ -23,6 +24,7 @@ describe('recording what the interval engine decided', () => {
 
   beforeEach(async () => {
     await harness.reset();
+    await new CompetenceFixtures(harness.dataSource).authoriseApprover('R Okonjo');
     await register.micrometer('SG-500001');
   });
 

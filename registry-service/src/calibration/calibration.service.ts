@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 
+import { CompetenceLevel } from '../competence/competence-level';
+import { CompetenceService } from '../competence/competence.service';
 import { ConflictError, ErrorCode, NotFoundError, RuleViolationError } from '../common/errors';
 import { Clock } from '../config/clock';
 import { ImpactService } from '../impact/impact.service';
@@ -35,7 +37,13 @@ import { ToleranceProfile } from './tolerance-profile.entity';
 import { ToleranceProfileService } from './tolerance-profile.service';
 
 /** Relations every read of a certificate needs to render a full view. */
-const CERTIFICATE_RELATIONS = { instrument: true, points: true } as const;
+// The class comes with the instrument because approval asks the authorisation
+// register about the discipline, and the discipline is on the class rather than
+// on the instrument.
+const CERTIFICATE_RELATIONS = {
+  instrument: { instrumentClass: true },
+  points: true,
+} as const;
 
 /**
  * Takes a completed calibration sheet and turns it into a certificate.
@@ -59,6 +67,7 @@ export class CalibrationService {
     private readonly profiles: ToleranceProfileService,
     private readonly assessor: ConformityAssessor,
     private readonly mapper: CalibrationMapper,
+    private readonly competence: CompetenceService,
     private readonly dataSource: DataSource,
     private readonly clock: Clock,
   ) {}
@@ -87,6 +96,21 @@ export class CalibrationService {
     }
     if (request.performedOn > this.clock.today()) {
       throw new RuleViolationError('a calibration cannot be dated in the future');
+    }
+
+    // Who did the work, checked before anything is built. An external
+    // laboratory's certificate is filed here rather than performed here, so
+    // their technician is not on our authorisation register and must not be
+    // asked to be.
+    if (!request.externalLab) {
+      await this.competence.require({
+        person: request.performedBy,
+        discipline: instrument.instrumentClass.discipline,
+        classId: instrument.instrumentClass.id,
+        level: CompetenceLevel.AUTHORISED,
+        upTo: highestNominal(request),
+        on: request.performedOn,
+      });
     }
 
     const profile = await this.resolveProfile(instrument);
@@ -312,8 +336,28 @@ export class CalibrationService {
     );
   }
 
+  /**
+   * Signs a certificate off.
+   *
+   * <p>Two separate rules, and they are separate on purpose. The entity refuses
+   * an approver who performed the work, which is a segregation rule. The
+   * register refuses an approver who is not authorised to approve in that
+   * discipline, which is a competence rule. Somebody can fail either one while
+   * passing the other.
+   */
   async approve(id: number, approver: string): Promise<CertificateView> {
     const certificate = await this.load(id);
+
+    if (!certificate.externalLab) {
+      await this.competence.require({
+        person: approver,
+        discipline: certificate.instrument.instrumentClass.discipline,
+        classId: certificate.instrument.instrumentClass.id,
+        level: CompetenceLevel.APPROVER,
+        upTo: null,
+        on: this.clock.today(),
+      });
+    }
 
     certificate.approve(approver);
     await this.certificates.save(certificate);
@@ -380,4 +424,15 @@ function appendOverrideNote(
 ): string {
   const note = `Traceability override: ${reason} (${report.summarise()})`;
   return remarks && remarks.trim() ? `${remarks} ${note}` : note;
+}
+
+/**
+ * The furthest point up the scale the sheet actually measured. An
+ * authorisation bounded to 0-100 does not cover a sheet whose top point is at
+ * 400, and the sheet is the only thing that knows where it went.
+ */
+function highestNominal(request: RecordCalibrationDto): number | null {
+  const nominals = (request.points ?? []).map((point) => Math.abs(point.nominal));
+
+  return nominals.length ? Math.max(...nominals) : null;
 }

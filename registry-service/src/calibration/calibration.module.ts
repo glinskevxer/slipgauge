@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { CompetenceModule } from '../competence/competence.module';
 import { InstrumentModule } from '../instrument/instrument.module';
 import { ImpactModule } from '../impact/impact.module';
 import { IntervalModule } from '../interval/interval.module';
@@ -19,6 +20,7 @@ import { ToleranceProfileService } from './tolerance-profile.service';
 
 @Module({
   imports: [
+    CompetenceModule,
     TypeOrmModule.forFeature([
       ToleranceProfile,
       CalibrationCertificate,

@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { CalibrationModule } from '../calibration/calibration.module';
+import { Competence } from '../competence/competence.entity';
+import { CompetenceModule } from '../competence/competence.module';
 import { Instrument } from '../instrument/instrument.entity';
 import { InstrumentModule } from '../instrument/instrument.module';
 import { AppUser } from '../security/app-user.entity';
@@ -11,9 +13,10 @@ import { DemoEstateService } from './demo-estate.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Instrument, UsageRecord, AppUser]),
+    TypeOrmModule.forFeature([Instrument, UsageRecord, AppUser, Competence]),
     InstrumentModule,
     CalibrationModule,
+    CompetenceModule,
   ],
   providers: [DemoEstateService, DemoEstateBootstrap],
   exports: [DemoEstateService],

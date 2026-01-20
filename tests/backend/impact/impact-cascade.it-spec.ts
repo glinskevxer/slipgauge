@@ -10,6 +10,7 @@ import { Instrument } from '@registry/instrument/instrument.entity';
 import { Role } from '@registry/security/role';
 import { CalibrationFixtures, UsageFixtures } from '../support/calibration-fixtures';
 import { RegisterFixtures } from '../support/fixtures';
+import { CompetenceFixtures } from '../support/competence-fixtures';
 import { TestApp, createTestApp } from '../support/test-app';
 
 const TODAY = '2025-06-10T09:00:00Z';
@@ -35,6 +36,7 @@ describe('what an out of tolerance result reached', () => {
 
   beforeEach(async () => {
     await harness.reset();
+    await new CompetenceFixtures(harness.dataSource).authoriseApprover('R Okonjo');
   });
 
   const http = () => harness.api(harness.tokenFor(Role.ADMIN));

@@ -4,9 +4,12 @@ import { DataSource, Repository } from 'typeorm';
 import { hashSync } from 'bcryptjs';
 
 import { AcceptancePolicy } from '../calibration/conformity';
+import { CompetenceLevel } from '../competence/competence-level';
+import { Competence, competence } from '../competence/competence.entity';
 import { CalibrationService } from '../calibration/calibration.service';
 import type { RecordCalibrationDto, StandardInput } from '../calibration/dto/record-calibration.dto';
 import { Instrument } from '../instrument/instrument.entity';
+import { Discipline } from '../instrument/instrument.enums';
 import { InstrumentService } from '../instrument/instrument.service';
 import { AppUser } from '../security/app-user.entity';
 import { Role } from '../security/role';
@@ -20,10 +23,21 @@ const DEMO_PASSWORD = 'demo-password-not-for-real-use';
 /** Fixed, so two people running the demo see the same laboratory. */
 const DEMO_SEED = 20_250_113;
 
+/**
+ * The demo files three years of back dated history, so the authorisations have
+ * to cover that history rather than starting today. A laboratory where nobody
+ * was authorised until this morning could not have issued any of it.
+ */
+const AUTHORISED_FROM = '2022-01-10';
+const AUTHORISED_TO = '2027-01-08';
+
 interface Person {
   readonly username: string;
   readonly name: string;
   readonly roles: readonly Role[];
+  /** The disciplines they are authorised in, which is not the same as a role. */
+  readonly authorised: readonly Discipline[];
+  readonly level: CompetenceLevel | null;
 }
 
 interface Kit {
@@ -38,14 +52,30 @@ interface Kit {
 }
 
 const STAFF: readonly Person[] = [
-  { username: 'r.okonjo', name: 'Rachel Okonjo', roles: [Role.TECHNICIAN] },
-  { username: 'd.ferreira', name: 'Daniel Ferreira', roles: [Role.TECHNICIAN] },
+  {
+    username: 'r.okonjo',
+    name: 'Rachel Okonjo',
+    roles: [Role.TECHNICIAN],
+    authorised: [Discipline.DIMENSIONAL],
+    level: CompetenceLevel.AUTHORISED,
+  },
+  {
+    username: 'd.ferreira',
+    name: 'Daniel Ferreira',
+    roles: [Role.TECHNICIAN],
+    authorised: [Discipline.DIMENSIONAL, Discipline.MASS],
+    level: CompetenceLevel.AUTHORISED,
+  },
   {
     username: 'h.whitcombe',
     name: 'Helen Whitcombe',
     roles: [Role.METROLOGIST, Role.QUALITY_MANAGER],
+    authorised: [Discipline.DIMENSIONAL, Discipline.MASS, Discipline.TEMPERATURE],
+    level: CompetenceLevel.APPROVER,
   },
-  { username: 'a.mbeki', name: 'Ayanda Mbeki', roles: [Role.AUDITOR] },
+  // The auditor reads. Giving them an authorisation would be the one thing a
+  // demo must not teach anybody to do.
+  { username: 'a.mbeki', name: 'Ayanda Mbeki', roles: [Role.AUDITOR], authorised: [], level: null },
 ];
 
 const BENCH: readonly Kit[] = [
@@ -84,6 +114,7 @@ export class DemoEstateService {
     @InjectRepository(Instrument) private readonly register: Repository<Instrument>,
     @InjectRepository(UsageRecord) private readonly usage: Repository<UsageRecord>,
     @InjectRepository(AppUser) private readonly users: Repository<AppUser>,
+    @InjectRepository(Competence) private readonly competence: Repository<Competence>,
     private readonly instruments: InstrumentService,
     private readonly calibrations: CalibrationService,
     private readonly dataSource: DataSource,
@@ -100,6 +131,7 @@ export class DemoEstateService {
     }
 
     await this.createStaff();
+    await this.authoriseStaff();
 
     const standard = await this.createStandard();
     const bench = await this.createBench();
@@ -141,6 +173,40 @@ export class DemoEstateService {
         await this.dataSource.query(
           'insert into app_user_role (user_id, role) values ($1, $2)',
           [saved.id, role],
+        );
+      }
+    }
+  }
+
+  /**
+   * Grants the demo staff what they need to do the work the demo then does.
+   *
+   * <p>Without this the demo loads a laboratory nobody is allowed to work in,
+   * which is exactly what happened the first time the authorisation register
+   * went live: every sheet the loader filed was refused, and the message said
+   * it was the bench's fault rather than the demo's.
+   */
+  private async authoriseStaff(): Promise<void> {
+    for (const person of STAFF) {
+      if (person.level === null) {
+        continue;
+      }
+      for (const discipline of person.authorised) {
+        const held = await this.competence.count({
+          where: { person: person.username, discipline, level: person.level },
+        });
+
+        if (held > 0) {
+          continue;
+        }
+        await this.competence.save(
+          competence(
+            person.username,
+            discipline,
+            person.level,
+            'h.whitcombe',
+            AUTHORISED_FROM,
+          ).running(AUTHORISED_FROM, AUTHORISED_TO),
         );
       }
     }
@@ -245,7 +311,7 @@ export class DemoEstateService {
       assetTag: instrument.assetTag,
       performedOn: on,
       issuedOn: on,
-      performedBy: 'R Okonjo',
+      performedBy: 'r.okonjo',
       issuingLab: LAB,
       externalLab: false,
       adjusted: false,

@@ -3,6 +3,7 @@ import { CertificateStandard, StandardRole } from '@registry/traceability';
 import { Role } from '@registry/security/role';
 import { CalibrationFixtures } from '../support/calibration-fixtures';
 import { RegisterFixtures } from '../support/fixtures';
+import { CompetenceFixtures } from '../support/competence-fixtures';
 import { TestApp, createTestApp } from '../support/test-app';
 
 describe('filing a sheet with its standards on it', () => {
@@ -22,6 +23,7 @@ describe('filing a sheet with its standards on it', () => {
 
   beforeEach(async () => {
     await harness.reset();
+    await new CompetenceFixtures(harness.dataSource).authoriseApprover('R Okonjo');
     await register.micrometer('SG-400001');
   });
 

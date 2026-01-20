@@ -281,18 +281,35 @@ describe('contract review on a customer job', () => {
     await bench.get(`/api/jobs/${reference}/review`).expect(404);
   });
 
+  /**
+   * The profile is reference data loaded by the migrations, and every other
+   * suite depends on it being there. Detaching it from the class and putting it
+   * back is the only way to test the refusal without leaving the next suite
+   * with a laboratory that cannot judge a micrometer.
+   */
   it('blocks the whole job when a class has no tolerance profile', async () => {
     const classes = harness.dataSource.getRepository(InstrumentClass);
     const type = await classes.findOneByOrFail({ code: 'MIC-EXT' });
-    await harness.dataSource.query('delete from tolerance_profile where class_id = $1', [type.id]);
 
-    const reference = await bookIn();
-    const reviewed = await reviewer
-      .post(`/api/jobs/${reference}/review`)
-      .send({ acceptancePolicy: 'MANAGED_RISK' })
-      .expect(201);
+    await harness.dataSource.query(
+      'update tolerance_profile set class_id = null where class_id = $1',
+      [type.id],
+    );
 
-    expect(reviewed.body.state).toBe('DECLINED');
-    expect(reviewed.body.review.declinedReason).toContain('no tolerance profile');
+    try {
+      const reference = await bookIn();
+      const reviewed = await reviewer
+        .post(`/api/jobs/${reference}/review`)
+        .send({ acceptancePolicy: 'MANAGED_RISK' })
+        .expect(201);
+
+      expect(reviewed.body.state).toBe('DECLINED');
+      expect(reviewed.body.review.declinedReason).toContain('no tolerance profile');
+    } finally {
+      await harness.dataSource.query(
+        `update tolerance_profile set class_id = $1 where code = 'DIM-MIC-25'`,
+        [type.id],
+      );
+    }
   });
 });

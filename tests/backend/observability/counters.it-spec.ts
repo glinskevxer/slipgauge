@@ -5,6 +5,7 @@ import { RegistryMetrics } from '@registry/observability';
 import { Role } from '@registry/security/role';
 import { StandardRole } from '@registry/traceability';
 import { RegisterFixtures } from '../support/fixtures';
+import { CompetenceFixtures } from '../support/competence-fixtures';
 import { TestApp, createTestApp } from '../support/test-app';
 
 const TODAY = '2025-06-10T09:00:00Z';
@@ -26,6 +27,7 @@ describe('the counters the laboratory actually watches', () => {
 
   beforeEach(async () => {
     await harness.reset();
+    await new CompetenceFixtures(harness.dataSource).authoriseApprover('R Okonjo');
     metrics.reset();
     await register.micrometer('SG-950001');
   });

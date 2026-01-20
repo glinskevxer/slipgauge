@@ -2,6 +2,7 @@ import { AcceptancePolicy, Verdict } from '@registry/calibration/conformity';
 import { StandardRole } from '@registry/traceability';
 import { Role } from '@registry/security/role';
 import { RegisterFixtures } from '../support/fixtures';
+import { CompetenceFixtures } from '../support/competence-fixtures';
 import { TestApp, createTestApp } from '../support/test-app';
 
 describe('filing a calibration sheet', () => {
@@ -19,6 +20,9 @@ describe('filing a calibration sheet', () => {
 
   beforeEach(async () => {
     await harness.reset();
+    const authorisations = new CompetenceFixtures(harness.dataSource);
+    await authorisations.authoriseApprover('R Okonjo');
+    await authorisations.authoriseApprover('D Ferreira');
     await fixtures.micrometer('SG-200001');
   });
 
