@@ -52,6 +52,15 @@ export const APP_ROUTES: Routes = [
     loadChildren: () => import('./features/impact/impact.routes').then((m) => m.IMPACT_ROUTES),
   },
   {
+    path: 'competence',
+    title: 'Who is authorised',
+    canActivate: [roleGuard('QUALITY_MANAGER', 'AUDITOR', 'ADMIN')],
+    loadComponent: () =>
+      import('./features/competence/competence-matrix.component').then(
+        (m) => m.CompetenceMatrixComponent,
+      ),
+  },
+  {
     path: 'refusals',
     title: 'Refusals',
     canActivate: [roleGuard('AUDITOR', 'QUALITY_MANAGER', 'ADMIN')],

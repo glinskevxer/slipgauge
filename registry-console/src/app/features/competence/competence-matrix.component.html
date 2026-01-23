@@ -1,0 +1,119 @@
+<section class="matrix">
+  <header class="matrix__head">
+    <div>
+      <h1>Who is authorised</h1>
+      <p class="matrix__sub">
+        Authorisations by person and discipline. A role is not an authorisation.
+      </p>
+    </div>
+
+    <label class="matrix__horizon">
+      Renewals within
+      <select (change)="store.setHorizon(+$any($event.target).value)">
+        @for (days of horizons; track days) {
+          <option [value]="days" [selected]="days === store.horizon()">{{ days }} days</option>
+        }
+      </select>
+    </label>
+  </header>
+
+  @if (store.uncovered().length) {
+    <p class="matrix__gap" role="alert">
+      Nobody can approve work in
+      {{ store.uncovered().join(', ').toLowerCase() }}.
+    </p>
+  }
+
+  @if (store.error(); as failure) {
+    <p class="matrix__error" role="alert">{{ failure.message }}</p>
+  }
+
+  @if (store.isEmpty()) {
+    <sg-empty-state
+      headline="Nobody is authorised yet"
+      detail="Grant somebody an authorisation before the bench tries to file a sheet."
+    />
+  } @else {
+    <table class="grid">
+      <caption class="grid__caption">
+        {{ store.matrix().people.length }} people. A is authorised, S approves, T is under
+        supervision.
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Person</th>
+          @for (discipline of store.matrix().disciplines; track discipline) {
+            <th scope="col" [title]="depth(discipline) + ' authorised'">
+              {{ discipline.slice(0, 4) }}
+            </th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (person of store.matrix().people; track person) {
+          <tr [class.grid__row--on]="store.person() === person">
+            <th scope="row">
+              <button type="button" class="grid__person" (click)="select(person)">
+                {{ person }}
+              </button>
+            </th>
+            @for (cell of row(person); track $index) {
+              <td
+                class="cell"
+                [class]="'cell--' + tone(cell)"
+                [title]="cellTitle(person, store.matrix().disciplines[$index], cell)"
+              >
+                {{ levelMark(cell?.level ?? null) }}
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+
+  @if (store.person(); as person) {
+    <section class="held" aria-labelledby="held-heading">
+      <h2 id="held-heading">What {{ person }} holds</h2>
+      @if (store.held().length === 0) {
+        <p class="held__none">Nothing on file.</p>
+      } @else {
+        <ul class="held__list">
+          @for (record of store.held(); track record.id) {
+            <li [class.held__gone]="record.withdrawn">
+              <strong>{{ levelLabel(record.level) }}</strong>
+              for {{ record.discipline.toLowerCase() }}
+              @if (record.classCode) {
+                , {{ record.classCode }}
+              }
+              @if (spanInWords(record); as span) {
+                , {{ span }}
+              }
+              <span class="held__dates">
+                from {{ record.authorisedFrom | date: 'd MMM y' }},
+                {{ remainingInWords(record.daysRemaining) }}
+              </span>
+              @if (record.withdrawn) {
+                <span class="held__reason">withdrawn: {{ record.withdrawnReason }}</span>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+
+  @if (store.expiring().length) {
+    <section class="renewals" aria-labelledby="renewals-heading">
+      <h2 id="renewals-heading">Coming up for renewal</h2>
+      <ul class="renewals__list">
+        @for (record of store.expiring(); track record.id) {
+          <li>
+            {{ record.person }}, {{ record.discipline.toLowerCase() }},
+            {{ remainingInWords(record.daysRemaining) }}
+          </li>
+        }
+      </ul>
+    </section>
+  }
+</section>

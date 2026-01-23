@@ -1,0 +1,156 @@
+.matrix {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sg-space-4);
+}
+
+.matrix__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sg-space-5);
+}
+
+.matrix__sub {
+  margin: var(--sg-space-1) 0 0;
+  color: var(--sg-ink-muted);
+  font-size: var(--sg-text-sm);
+}
+
+.matrix__horizon {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sg-space-1);
+  font-size: var(--sg-text-sm);
+  color: var(--sg-ink-muted);
+}
+
+.matrix__gap {
+  padding: var(--sg-space-3);
+  background: var(--sg-marginal-soft);
+  border: 1px solid var(--sg-marginal);
+  border-radius: var(--sg-radius-md);
+  color: var(--sg-marginal);
+}
+
+.matrix__error {
+  padding: var(--sg-space-3);
+  background: var(--sg-fail-soft);
+  border: 1px solid var(--sg-fail);
+  border-radius: var(--sg-radius-md);
+  color: var(--sg-fail);
+}
+
+.grid {
+  border-collapse: collapse;
+}
+
+.grid__caption {
+  padding-bottom: var(--sg-space-2);
+  color: var(--sg-ink-muted);
+  font-size: var(--sg-text-sm);
+  text-align: left;
+}
+
+.grid th,
+.grid td {
+  padding: var(--sg-space-1) var(--sg-space-2);
+  border: 1px solid var(--sg-border);
+  text-align: left;
+}
+
+.grid thead th {
+  color: var(--sg-ink-muted);
+  font-size: var(--sg-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.grid__row--on {
+  outline: 2px solid var(--sg-accent);
+}
+
+.grid__person {
+  background: none;
+  border: 0;
+  color: var(--sg-accent);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+.cell {
+  width: 2.5rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.cell--ok {
+  background: var(--sg-pass-soft);
+  color: var(--sg-pass);
+}
+
+.cell--warn {
+  background: var(--sg-marginal-soft);
+  color: var(--sg-marginal);
+}
+
+.cell--bad {
+  background: var(--sg-fail-soft);
+  color: var(--sg-fail);
+}
+
+.cell--quiet {
+  color: var(--sg-ink-muted);
+}
+
+.cell--unknown {
+  background: var(--sg-surface-sunken);
+}
+
+.held,
+.renewals {
+  padding: var(--sg-space-4);
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-border);
+  border-radius: var(--sg-radius-md);
+}
+
+.held h2,
+.renewals h2 {
+  margin: 0 0 var(--sg-space-2);
+  font-size: var(--sg-text-md);
+}
+
+.held__list,
+.renewals__list {
+  margin: 0;
+  padding-left: var(--sg-space-4);
+}
+
+.held__list li,
+.renewals__list li {
+  margin-bottom: var(--sg-space-1);
+}
+
+.held__gone {
+  color: var(--sg-ink-muted);
+  text-decoration: line-through;
+}
+
+.held__dates {
+  margin-left: var(--sg-space-1);
+  color: var(--sg-ink-muted);
+  font-size: var(--sg-text-sm);
+}
+
+.held__reason {
+  margin-left: var(--sg-space-1);
+  color: var(--sg-fail);
+  font-size: var(--sg-text-sm);
+}
+
+.held__none {
+  margin: 0;
+  color: var(--sg-ink-muted);
+}

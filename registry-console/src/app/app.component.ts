@@ -47,6 +47,7 @@ export class AppComponent {
 
   protected readonly qualityNav = signal<readonly NavEntry[]>([
     { path: '/refusals', label: 'Refusals', hint: 'What the registry turned away' },
+    { path: '/competence', label: 'Competence', hint: 'Who is authorised for what' },
   ]);
 
   protected readonly adminNav = signal<readonly NavEntry[]>([
