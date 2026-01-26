@@ -22,58 +22,6 @@
   color: var(--sg-fail);
 }
 
-.tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-  gap: var(--sg-space-3);
-}
-
-.tile {
-  padding: var(--sg-space-4);
-  background: var(--sg-surface);
-  border: 1px solid var(--sg-border);
-  border-radius: var(--sg-radius-lg);
-  color: inherit;
-  text-align: center;
-  text-decoration: none;
-}
-
-.tile:hover {
-  border-color: var(--sg-border-strong);
-  text-decoration: none;
-}
-
-.tile--bad {
-  border-color: var(--sg-fail);
-}
-
-.tile--bad .tile__count {
-  color: var(--sg-fail);
-}
-
-.tile--warn {
-  border-color: var(--sg-marginal);
-}
-
-.tile--warn .tile__count {
-  color: var(--sg-marginal);
-}
-
-.tile__count {
-  display: block;
-  font-size: 2rem;
-  font-weight: 700;
-  line-height: 1.1;
-}
-
-.tile__label {
-  display: block;
-  color: var(--sg-ink-muted);
-  font-size: var(--sg-text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
 .charts {
   display: grid;
   grid-template-columns: 2fr 1fr;

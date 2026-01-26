@@ -4,13 +4,14 @@ import { RouterLink } from '@angular/router';
 
 import { Criticality } from '@core/models/instrument.model';
 import { basisLabel, dueInWords, standingLabel, standingTone } from '@core/models/recall.model';
+import { CountTileComponent } from '@shared/components/count-tile.component';
 import { EmptyStateComponent } from '@shared/components/empty-state.component';
 import { RecallGrouping, RecallStore } from './recall.store';
 
 @Component({
   selector: 'sg-recall-board',
   standalone: true,
-  imports: [RouterLink, DatePipe, EmptyStateComponent],
+  imports: [RouterLink, DatePipe, EmptyStateComponent, CountTileComponent],
   providers: [RecallStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './recall-board.component.html',

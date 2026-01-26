@@ -29,42 +29,6 @@
   color: var(--sg-ink-muted);
 }
 
-.tallies {
-  display: flex;
-  gap: var(--sg-space-2);
-}
-
-.tally {
-  min-width: 5.5rem;
-  padding: var(--sg-space-2) var(--sg-space-3);
-  background: var(--sg-surface);
-  border: 1px solid var(--sg-border);
-  border-radius: var(--sg-radius-md);
-  text-align: center;
-}
-
-.tally--bad {
-  border-color: var(--sg-fail);
-  color: var(--sg-fail);
-}
-
-.tally--warn {
-  border-color: var(--sg-marginal);
-  color: var(--sg-marginal);
-}
-
-.tally__count {
-  display: block;
-  font-size: var(--sg-text-lg);
-  font-variant-numeric: tabular-nums;
-}
-
-.tally__label {
-  display: block;
-  font-size: var(--sg-text-xs);
-  color: var(--sg-ink-muted);
-}
-
 .lanes {
   display: flex;
   flex-wrap: wrap;

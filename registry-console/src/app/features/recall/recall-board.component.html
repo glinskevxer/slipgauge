@@ -8,23 +8,11 @@
     </div>
 
     @if (store.summary(); as summary) {
-      <div class="tallies">
-        <div class="tally tally--bad">
-          <span class="tally__count">{{ summary.overdue }}</span>
-          <span class="tally__label">overdue</span>
-        </div>
-        <div class="tally tally--warn">
-          <span class="tally__count">{{ store.countFor('DUE_THIS_WEEK') }}</span>
-          <span class="tally__label">this week</span>
-        </div>
-        <div class="tally">
-          <span class="tally__count">{{ store.countFor('DUE_THIS_MONTH') }}</span>
-          <span class="tally__label">this month</span>
-        </div>
-        <div class="tally">
-          <span class="tally__count">{{ summary.unscheduled }}</span>
-          <span class="tally__label">never calibrated</span>
-        </div>
+      <div class="tiles tiles--tight">
+        <sg-count-tile [count]="summary.overdue" label="overdue" tone="bad" />
+        <sg-count-tile [count]="store.countFor('DUE_THIS_WEEK')" label="this week" tone="warn" />
+        <sg-count-tile [count]="store.countFor('DUE_THIS_MONTH')" label="this month" />
+        <sg-count-tile [count]="summary.unscheduled" label="never calibrated" />
       </div>
     }
   </header>

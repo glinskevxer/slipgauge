@@ -25,49 +25,6 @@
   color: var(--sg-fail);
 }
 
-.tallies {
-  display: flex;
-  gap: var(--sg-space-2);
-}
-
-.tally {
-  min-width: 5.5rem;
-  padding: var(--sg-space-2) var(--sg-space-3);
-  background: var(--sg-surface);
-  border: 1px solid var(--sg-border);
-  border-radius: var(--sg-radius-md);
-  text-align: center;
-}
-
-.tally--bad {
-  border-color: var(--sg-fail);
-}
-
-.tally--bad .tally__count {
-  color: var(--sg-fail);
-}
-
-.tally--warn {
-  border-color: var(--sg-marginal);
-}
-
-.tally--warn .tally__count {
-  color: var(--sg-marginal);
-}
-
-.tally__count {
-  display: block;
-  font-size: var(--sg-text-xl);
-  font-weight: 700;
-  line-height: 1.1;
-}
-
-.tally__label {
-  display: block;
-  color: var(--sg-ink-muted);
-  font-size: var(--sg-text-xs);
-}
-
 .controls {
   display: flex;
   flex-wrap: wrap;

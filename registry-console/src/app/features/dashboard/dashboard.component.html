@@ -11,26 +11,31 @@
   }
 
   <div class="tiles">
-    <a class="tile" [class.tile--bad]="store.overdue() > 0" routerLink="/recalls">
-      <span class="tile__count">{{ store.overdue() }}</span>
-      <span class="tile__label">overdue</span>
-    </a>
-    <a class="tile" [class.tile--warn]="store.dueSoon() > 0" routerLink="/recalls">
-      <span class="tile__count">{{ store.dueSoon() }}</span>
-      <span class="tile__label">due this week</span>
-    </a>
-    <a class="tile" routerLink="/recalls">
-      <span class="tile__count">{{ store.unscheduled() }}</span>
-      <span class="tile__label">never calibrated</span>
-    </a>
-    <a class="tile" [class.tile--bad]="store.highSeverity() > 0" routerLink="/impact">
-      <span class="tile__count">{{ store.openAssessments() }}</span>
-      <span class="tile__label">open assessments</span>
-    </a>
-    <a class="tile" [class.tile--warn]="store.pendingDispositions() > 0" routerLink="/impact">
-      <span class="tile__count">{{ store.pendingDispositions() }}</span>
-      <span class="tile__label">items to disposition</span>
-    </a>
+    <sg-count-tile
+      [count]="store.overdue()"
+      label="overdue"
+      [tone]="store.overdue() > 0 ? 'bad' : 'neutral'"
+      link="/recalls"
+    />
+    <sg-count-tile
+      [count]="store.dueSoon()"
+      label="due this week"
+      [tone]="store.dueSoon() > 0 ? 'warn' : 'neutral'"
+      link="/recalls"
+    />
+    <sg-count-tile [count]="store.unscheduled()" label="never calibrated" link="/recalls" />
+    <sg-count-tile
+      [count]="store.openAssessments()"
+      label="open assessments"
+      [tone]="store.highSeverity() > 0 ? 'bad' : 'neutral'"
+      link="/impact"
+    />
+    <sg-count-tile
+      [count]="store.pendingDispositions()"
+      label="items to disposition"
+      [tone]="store.pendingDispositions() > 0 ? 'warn' : 'neutral'"
+      link="/impact"
+    />
   </div>
 
   <div class="charts">

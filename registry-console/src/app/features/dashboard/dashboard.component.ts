@@ -7,12 +7,13 @@ import { severityTone } from '@core/models/impact.model';
 import { dueInWords } from '@core/models/recall.model';
 import { BarChartComponent } from '@shared/charts/bar-chart.component';
 import { DonutChartComponent } from '@shared/charts/donut-chart.component';
+import { CountTileComponent } from '@shared/components/count-tile.component';
 import { DashboardStore } from './dashboard.store';
 
 @Component({
   selector: 'sg-dashboard',
   standalone: true,
-  imports: [RouterLink, DatePipe, BarChartComponent, DonutChartComponent],
+  imports: [RouterLink, DatePipe, BarChartComponent, DonutChartComponent, CountTileComponent],
   providers: [DashboardStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.component.html',

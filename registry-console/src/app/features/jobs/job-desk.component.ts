@@ -9,6 +9,7 @@ import {
   priorityLabel,
   stateLabel,
 } from '@core/models/job.model';
+import { CountTileComponent } from '@shared/components/count-tile.component';
 import { EmptyStateComponent } from '@shared/components/empty-state.component';
 import { DeskLane, JobDeskStore } from './job-desk.store';
 
@@ -28,7 +29,7 @@ interface LaneTab {
 @Component({
   selector: 'sg-job-desk',
   standalone: true,
-  imports: [RouterLink, DatePipe, EmptyStateComponent],
+  imports: [RouterLink, DatePipe, EmptyStateComponent, CountTileComponent],
   providers: [JobDeskStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './job-desk.component.html',

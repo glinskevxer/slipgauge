@@ -52,3 +52,21 @@ table {
   border-collapse: collapse;
   width: 100%;
 }
+
+// A row of count tiles. The tiles themselves are a component; only the way
+// they are laid out belongs to the screen using them, and every screen using
+// them lays them out the same way.
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--sg-space-3);
+}
+
+.tiles--tight {
+  display: flex;
+  gap: var(--sg-space-2);
+}
+
+.tiles--tight sg-count-tile {
+  min-width: 6rem;
+}

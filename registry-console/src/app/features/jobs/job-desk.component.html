@@ -6,23 +6,19 @@
     </div>
 
     @if (store.summary(); as summary) {
-      <div class="tallies">
-        <div class="tally" [class.tally--bad]="summary.late > 0">
-          <span class="tally__count">{{ summary.late }}</span>
-          <span class="tally__label">late</span>
-        </div>
-        <div class="tally" [class.tally--warn]="summary.dueToday > 0">
-          <span class="tally__count">{{ summary.dueToday }}</span>
-          <span class="tally__label">due today</span>
-        </div>
-        <div class="tally">
-          <span class="tally__count">{{ summary.awaitingReview }}</span>
-          <span class="tally__label">to review</span>
-        </div>
-        <div class="tally">
-          <span class="tally__count">{{ summary.readyToDispatch }}</span>
-          <span class="tally__label">to send back</span>
-        </div>
+      <div class="tiles tiles--tight">
+        <sg-count-tile
+          [count]="summary.late"
+          label="late"
+          [tone]="summary.late > 0 ? 'bad' : 'neutral'"
+        />
+        <sg-count-tile
+          [count]="summary.dueToday"
+          label="due today"
+          [tone]="summary.dueToday > 0 ? 'warn' : 'neutral'"
+        />
+        <sg-count-tile [count]="summary.awaitingReview" label="to review" />
+        <sg-count-tile [count]="summary.readyToDispatch" label="to send back" />
       </div>
     }
   </header>
