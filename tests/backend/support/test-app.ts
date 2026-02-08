@@ -50,6 +50,9 @@ export interface ApiClient {
  */
 const MUTABLE_TABLES = [
   'audit_event',
+  'environment_excursion',
+  'environment_reading',
+  'environment_limit',
   'competence',
   'contract_review',
   'job_item',

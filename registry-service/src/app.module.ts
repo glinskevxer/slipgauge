@@ -5,6 +5,7 @@ import { CompetenceModule } from './competence/competence.module';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
 import { DemoModule } from './demo/demo.module';
+import { EnvironmentModule } from './environment/environment.module';
 import { ImpactModule } from './impact/impact.module';
 import { InstrumentModule } from './instrument/instrument.module';
 import { JobsModule } from './jobs/jobs.module';
@@ -32,6 +33,7 @@ import { UsageModule } from './usage/usage.module';
     CalibrationModule,
     TraceabilityModule,
     IntervalModule,
+    EnvironmentModule,
     RecallModule,
     UsageModule,
     ImpactModule,
