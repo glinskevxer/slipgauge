@@ -81,6 +81,16 @@ export class RecordCalibrationDto {
   @MaxLength(120)
   issuingLab: string;
 
+  /**
+   * The room it was measured in. Left out, the register takes the room the
+   * instrument lives in, which is right for the laboratory's own kit and is the
+   * only thing anybody could have meant.
+   */
+  @IsOptional()
+  @IsString()
+  @MaxLength(24)
+  performedInLocationCode?: string;
+
   @IsOptional()
   @IsBoolean()
   externalLab?: boolean;

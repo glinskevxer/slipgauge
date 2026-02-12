@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { CalibrationCertificate } from '../calibration/calibration-certificate.entity';
+import { CalibrationModule } from '../calibration/calibration.module';
 import { InstrumentModule } from '../instrument/instrument.module';
 import { EnvironmentController } from './environment.controller';
 import {
@@ -16,8 +18,14 @@ import { EnvironmentService } from './environment.service';
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([EnvironmentLimitRecord, EnvironmentReading, EnvironmentExcursion]),
+    TypeOrmModule.forFeature([
+      EnvironmentLimitRecord,
+      EnvironmentReading,
+      EnvironmentExcursion,
+      CalibrationCertificate,
+    ]),
     InstrumentModule,
+    CalibrationModule,
   ],
   controllers: [EnvironmentController],
   providers: [EnvironmentService],

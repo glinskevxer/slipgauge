@@ -8,6 +8,8 @@ import { Discipline } from '../instrument/instrument.enums';
 import { StorageLocation } from '../instrument/storage-location.entity';
 import { StorageLocationService } from '../instrument/storage-location.service';
 import type {
+  AffectedCertificate,
+  AffectedWork,
   AssessExcursionDto,
   EnvironmentLimitView,
   ExcursionView,
@@ -16,6 +18,8 @@ import type {
   UploadReadingsDto,
   UploadResult,
 } from './dto/environment.dto';
+import { CalibrationCertificate } from '../calibration/calibration-certificate.entity';
+import { CalibrationService } from '../calibration/calibration.service';
 import {
   EnvironmentExcursion,
   EnvironmentLimitRecord,
@@ -46,7 +50,10 @@ export class EnvironmentService {
     private readonly readings: Repository<EnvironmentReading>,
     @InjectRepository(EnvironmentExcursion)
     private readonly excursions: Repository<EnvironmentExcursion>,
+    @InjectRepository(CalibrationCertificate)
+    private readonly certificates: Repository<CalibrationCertificate>,
     private readonly places: StorageLocationService,
+    private readonly calibrations: CalibrationService,
     private readonly clock: Clock,
   ) {}
 
@@ -237,6 +244,85 @@ export class EnvironmentService {
     }
     row.assess(by, request.finding, this.clock.now());
     return toExcursionView(await this.excursions.save(row));
+  }
+
+  /**
+   * Every certificate issued in the room while it was outside its band.
+   *
+   * <p>Matched by day rather than by the minute. A certificate carries the date
+   * it was performed and not the hour, so a sheet dated the day of a three hour
+   * excursion is in question: the register cannot prove it was signed before
+   * the chiller tripped, and an assessor will not accept that it can.
+   */
+  async affectedBy(excursionId: number): Promise<AffectedWork> {
+    const excursion = await this.excursions.findOne({
+      where: { id: excursionId },
+      relations: { location: true },
+    });
+
+    if (!excursion) {
+      throw new NotFoundError('excursion', excursionId);
+    }
+
+    const from = excursion.startedAt.toISOString().slice(0, 10);
+    const to = (excursion.endedAt ?? this.clock.now()).toISOString().slice(0, 10);
+
+    const rows = await this.certificates.find({
+      where: {
+        performedIn: { id: excursion.location.id },
+        performedOn: Between(from, to),
+      },
+      relations: { instrument: true },
+      order: { performedOn: 'ASC', id: 'ASC' },
+    });
+
+    return {
+      excursionId: excursion.id,
+      locationCode: excursion.location.code,
+      severity: excursion.severity,
+      from,
+      to,
+      certificates: rows.map((row): AffectedCertificate => ({
+        certificateId: row.id,
+        certificateNumber: row.certificateNumber,
+        assetTag: row.instrument.assetTag,
+        performedOn: row.performedOn,
+        performedBy: row.performedBy,
+        withdrawn: row.isWithdrawn(),
+        wholeDay: row.performedOn > from && row.performedOn < to,
+      })),
+    };
+  }
+
+  /**
+   * Withdraws everything the excursion put in question.
+   *
+   * <p>One at a time through the calibration service rather than one update, so
+   * each withdrawal replays the interval for its instrument and moves the recall
+   * date. A bulk update would leave five instruments showing a due date worked
+   * out from evidence that no longer exists.
+   */
+  async withdrawAffected(
+    excursionId: number,
+    reason: string,
+  ): Promise<{ withdrawn: number; alreadyWithdrawn: number }> {
+    const affected = await this.affectedBy(excursionId);
+    let withdrawn = 0;
+    let alreadyWithdrawn = 0;
+
+    for (const certificate of affected.certificates) {
+      if (certificate.withdrawn) {
+        alreadyWithdrawn += 1;
+        continue;
+      }
+      await this.calibrations.withdraw(certificate.certificateId, reason);
+      withdrawn += 1;
+    }
+
+    this.log.warn(
+      `excursion ${excursionId} in ${affected.locationCode}: ${withdrawn} certificate(s) withdrawn`,
+    );
+    return { withdrawn, alreadyWithdrawn };
   }
 
   /** What a room was doing over a window, for the chart. */

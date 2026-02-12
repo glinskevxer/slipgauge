@@ -13,6 +13,7 @@ import { JobItemRange1736000000014 } from './1736000000014-JobItemRange';
 import { ClassCapability1736000000015 } from './1736000000015-ClassCapability';
 import { Competence1736000000016 } from './1736000000016-Competence';
 import { Environment1736000000017 } from './1736000000017-Environment';
+import { CertificateRoom1736000000018 } from './1736000000018-CertificateRoom';
 import { ProfileClassLinks1736000000004 } from './1736000000004-ProfileClassLinks';
 import { ToleranceProfiles1736000000003 } from './1736000000003-ToleranceProfiles';
 
@@ -41,4 +42,5 @@ export const MIGRATIONS = [
   ClassCapability1736000000015,
   Competence1736000000016,
   Environment1736000000017,
+  CertificateRoom1736000000018,
 ];

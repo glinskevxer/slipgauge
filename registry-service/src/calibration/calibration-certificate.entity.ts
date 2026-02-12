@@ -13,6 +13,7 @@ import { AuditedEntity } from '../common/audited.entity';
 import { RuleViolationError } from '../common/errors';
 import { numericTransformer } from '../common/numeric';
 import { Instrument } from '../instrument/instrument.entity';
+import { StorageLocation } from '../instrument/storage-location.entity';
 import { Verdict, worseOf } from './conformity';
 import { MeasurementPoint } from './measurement-point.entity';
 
@@ -85,6 +86,18 @@ export class CalibrationCertificate extends AuditedEntity {
 
   @Column({ type: 'varchar', length: 2000, nullable: true })
   remarks: string | null;
+
+  /**
+   * The room the measurement was made in, which is not always where the
+   * instrument lives. Null on a certificate filed by another laboratory,
+   * because their rooms are their business.
+   */
+  @ManyToOne(() => StorageLocation, { nullable: true })
+  @JoinColumn({ name: 'performed_in_location_id' })
+  performedIn: StorageLocation | null;
+
+  @RelationId((certificate: CalibrationCertificate) => certificate.performedIn)
+  performedInId: number | null;
 
   @Column({ name: 'withdrawn_at', type: 'timestamptz', nullable: true })
   withdrawnAt: Date | null;

@@ -9,6 +9,8 @@ import { Clock } from '../config/clock';
 import { ImpactService } from '../impact/impact.service';
 import { RegistryMetrics } from '../observability/registry-metrics.service';
 import { Instrument } from '../instrument/instrument.entity';
+import { StorageLocation } from '../instrument/storage-location.entity';
+import { StorageLocationService } from '../instrument/storage-location.service';
 import { IntervalService } from '../interval/interval.service';
 import {
   CertificateStandard,
@@ -42,6 +44,7 @@ import { ToleranceProfileService } from './tolerance-profile.service';
 // on the instrument.
 const CERTIFICATE_RELATIONS = {
   instrument: { instrumentClass: true },
+  performedIn: true,
   points: true,
 } as const;
 
@@ -68,6 +71,7 @@ export class CalibrationService {
     private readonly assessor: ConformityAssessor,
     private readonly mapper: CalibrationMapper,
     private readonly competence: CompetenceService,
+    private readonly places: StorageLocationService,
     private readonly dataSource: DataSource,
     private readonly clock: Clock,
   ) {}
@@ -125,6 +129,7 @@ export class CalibrationService {
     );
 
     certificate.externalLab = request.externalLab ?? false;
+    certificate.performedIn = await this.roomFor(request, instrument);
     certificate.markAdjusted(request.adjusted ?? false);
     certificate.remarks = request.remarks ?? null;
     certificate.recordAmbient(request.ambientTemperature ?? null, request.ambientHumidity ?? null);
@@ -395,13 +400,32 @@ export class CalibrationService {
   private async instrumentByTag(assetTag: string): Promise<Instrument> {
     const instrument = await this.instruments.findOne({
       where: { assetTag },
-      relations: { instrumentClass: true },
+      relations: { instrumentClass: true, location: true },
     });
 
     if (!instrument) {
       throw new NotFoundError('instrument', assetTag);
     }
     return instrument;
+  }
+
+  /**
+   * The room the sheet says it was measured in, or the one the instrument lives
+   * in. Nothing is invented for an outside laboratory: their rooms are not on
+   * our register and pretending otherwise would put their work into our own
+   * excursion reports.
+   */
+  private async roomFor(
+    request: RecordCalibrationDto,
+    instrument: Instrument,
+  ): Promise<StorageLocation | null> {
+    if (request.externalLab) {
+      return null;
+    }
+    if (request.performedInLocationCode) {
+      return this.places.byCode(request.performedInLocationCode);
+    }
+    return instrument.location ?? null;
   }
 
   private async resolveProfile(instrument: Instrument): Promise<ToleranceProfile> {

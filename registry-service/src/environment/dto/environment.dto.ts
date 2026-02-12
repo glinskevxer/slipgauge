@@ -169,3 +169,30 @@ export interface UploadResult {
   readonly excursionsOpened: number;
   readonly excursionsClosed: number;
 }
+
+/** A certificate that was issued while the room was outside its band. */
+export interface AffectedCertificate {
+  readonly certificateId: number;
+  readonly certificateNumber: string;
+  readonly assetTag: string;
+  readonly performedOn: string;
+  readonly performedBy: string;
+  readonly withdrawn: boolean;
+  /** True when the room was out for the whole of the day it was measured. */
+  readonly wholeDay: boolean;
+}
+
+export interface AffectedWork {
+  readonly excursionId: number;
+  readonly locationCode: string;
+  readonly severity: string;
+  readonly from: string;
+  readonly to: string;
+  readonly certificates: readonly AffectedCertificate[];
+}
+
+export class WithdrawAffectedDto {
+  @IsString()
+  @MaxLength(400)
+  reason: string;
+}

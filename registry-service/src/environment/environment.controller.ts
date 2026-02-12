@@ -20,8 +20,10 @@ import {
   AssessExcursionDto,
   SetEnvironmentLimitDto,
   UploadReadingsDto,
+  WithdrawAffectedDto,
 } from './dto/environment.dto';
 import type {
+  AffectedWork,
   EnvironmentLimitView,
   ExcursionView,
   RoomTrace,
@@ -72,6 +74,25 @@ export class EnvironmentController {
     @CurrentUser() user: Principal,
   ): Promise<ExcursionView> {
     return this.environment.assess(id, user.username, request);
+  }
+
+  /** What was issued in the room while it was out. */
+  @Get('excursions/:id/affected')
+  affected(@Param('id', ParseIntPipe) id: number): Promise<AffectedWork> {
+    return this.environment.affectedBy(id);
+  }
+
+  /**
+   * Withdraws everything the excursion put in question. A quality manager
+   * decision: it moves recall dates across the whole room.
+   */
+  @RequireRoles(Role.QUALITY_MANAGER)
+  @Post('excursions/:id/withdrawals')
+  withdrawAffected(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() request: WithdrawAffectedDto,
+  ): Promise<{ withdrawn: number; alreadyWithdrawn: number }> {
+    return this.environment.withdrawAffected(id, request.reason);
   }
 
   @Get('rooms/:code/trace')
