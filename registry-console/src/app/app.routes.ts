@@ -52,6 +52,13 @@ export const APP_ROUTES: Routes = [
     loadChildren: () => import('./features/impact/impact.routes').then((m) => m.IMPACT_ROUTES),
   },
   {
+    path: 'rooms',
+    title: 'Room log',
+    canActivate: [signedInGuard],
+    loadComponent: () =>
+      import('./features/environment/room-log.component').then((m) => m.RoomLogComponent),
+  },
+  {
     path: 'competence',
     title: 'Who is authorised',
     canActivate: [roleGuard('QUALITY_MANAGER', 'AUDITOR', 'ADMIN')],

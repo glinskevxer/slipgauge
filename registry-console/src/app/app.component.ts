@@ -39,6 +39,7 @@ export class AppComponent {
     { path: '/recalls', label: 'Recalls', hint: 'What is due and what is already late' },
     { path: '/recalls/capacity', label: 'Capacity', hint: 'Whether the benches can take it' },
     { path: '/impact', label: 'Impact', hint: 'Where an out of tolerance result reached' },
+    { path: '/rooms', label: 'Rooms', hint: 'When a room was outside its band' },
   ]);
 
   protected readonly terminalNav = signal<readonly NavEntry[]>([

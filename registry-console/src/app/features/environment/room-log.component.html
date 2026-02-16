@@ -1,0 +1,197 @@
+<section class="rooms">
+  <header class="rooms__head">
+    <div>
+      <h1>Room log</h1>
+      <p class="rooms__sub">
+        When a room was outside the band it is held to, and what went out anyway.
+      </p>
+    </div>
+
+    <div class="tiles tiles--tight">
+      <sg-count-tile
+        [count]="store.major().length"
+        label="major"
+        [tone]="store.major().length > 0 ? 'bad' : 'neutral'"
+      />
+      <sg-count-tile
+        [count]="store.stillOut().length"
+        label="still out"
+        [tone]="store.stillOut().length > 0 ? 'warn' : 'neutral'"
+      />
+      <sg-count-tile [count]="store.needingWork().length" label="to assess" />
+    </div>
+  </header>
+
+  <div class="controls">
+    <label class="controls__field">
+      Room
+      <input
+        type="search"
+        name="room"
+        placeholder="HARLOW-DIM"
+        (change)="filterRoom($any($event.target).value)"
+      />
+    </label>
+
+    <label class="controls__check">
+      <input
+        type="checkbox"
+        [checked]="store.unassessedOnly()"
+        (change)="store.showAll($any($event.target).checked)"
+      />
+      Only what nobody has looked at
+    </label>
+  </div>
+
+  @if (store.limits().length) {
+    <ul class="bands">
+      @for (limit of store.limits(); track limit.id) {
+        <li>
+          <strong>{{ limit.locationCode }}</strong>
+          @if (limit.discipline) {
+            ({{ limit.discipline.toLowerCase() }})
+          }
+          held to {{ limit.summary }}
+          @if (limit.soakHours) {
+            , {{ limit.soakHours }} h soak
+          }
+        </li>
+      }
+    </ul>
+  }
+
+  @if (store.error(); as failure) {
+    <p class="rooms__error" role="alert">{{ failure.message }}</p>
+  }
+
+  @if (store.loading()) {
+    <p class="rooms__loading">Reading the log.</p>
+  } @else if (store.isEmpty()) {
+    <sg-empty-state
+      headline="The rooms have behaved"
+      detail="Nothing has been outside its band, or no logger has been emptied yet."
+    />
+  } @else {
+    <ul class="excursions">
+      @for (excursion of store.excursions(); track excursion.id) {
+        <li class="excursion" [class.excursion--on]="store.opened()?.id === excursion.id">
+          <button type="button" class="excursion__head" (click)="store.open(excursion)">
+            <span class="excursion__badge" [class]="'excursion__badge--' + severityTone(excursion.severity)">
+              {{ severityLabel(excursion.severity) }}
+            </span>
+            <span class="excursion__what">
+              {{ kindLabel(excursion.kind) }} in {{ excursion.locationCode }}
+            </span>
+            <span class="excursion__when">
+              {{ excursion.startedAt | date: 'd MMM HH:mm' }}, {{ duration(excursion) }}
+            </span>
+            <span class="excursion__value">{{ overshootInWords(excursion) }}</span>
+            @if (excursion.open) {
+              <span class="excursion__flag">still out</span>
+            }
+            @if (excursion.assessed) {
+              <span class="excursion__done">assessed</span>
+            }
+          </button>
+
+          @if (store.opened()?.id === excursion.id) {
+            <div class="detail">
+              @if (excursion.finding) {
+                <p class="detail__finding">{{ excursion.finding }}</p>
+              }
+
+              @if (store.trace(); as trace) {
+                <p class="detail__trace">
+                  {{ trace.samples.length }} readings a day either side.
+                  @if (trace.limit) {
+                    The room is held to {{ trace.limit.summary }}.
+                  }
+                </p>
+              }
+
+              <h3>What went out while the room was like this</h3>
+              @if (store.affected(); as work) {
+                @if (work.certificates.length === 0) {
+                  <p class="detail__none">Nothing was issued in that room while it lasted.</p>
+                } @else {
+                  <table class="affected">
+                    <thead>
+                      <tr>
+                        <th scope="col">Certificate</th>
+                        <th scope="col">Instrument</th>
+                        <th scope="col">Done</th>
+                        <th scope="col">By</th>
+                        <th scope="col">State</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (row of work.certificates; track row.certificateId) {
+                        <tr>
+                          <th scope="row">
+                            <a [routerLink]="['/certificates', row.certificateId]">
+                              {{ row.certificateNumber }}
+                            </a>
+                          </th>
+                          <td>{{ row.assetTag }}</td>
+                          <td>{{ row.performedOn | date: 'd MMM' }}</td>
+                          <td>{{ row.performedBy }}</td>
+                          <td>{{ row.withdrawn ? 'withdrawn' : 'stands' }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                }
+              } @else {
+                <p class="detail__none">Reading what it touched.</p>
+              }
+
+              @if (store.withdrawable().length && !excursion.assessed) {
+                <div class="detail__do">
+                  <label class="field">
+                    Why they are being withdrawn
+                    <input
+                      type="text"
+                      name="withdrawReason"
+                      [value]="withdrawReason()"
+                      (input)="withdrawReason.set($any($event.target).value)"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    class="danger"
+                    [disabled]="!withdrawReason().trim()"
+                    (click)="withdraw()"
+                  >
+                    Withdraw {{ store.withdrawable().length }} certificate(s)
+                  </button>
+                </div>
+              }
+
+              @if (!excursion.assessed && !excursion.open) {
+                <div class="detail__do">
+                  <label class="field">
+                    What was found
+                    <input
+                      type="text"
+                      name="finding"
+                      [value]="finding()"
+                      (input)="finding.set($any($event.target).value)"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    class="primary"
+                    [disabled]="!finding().trim()"
+                    (click)="assess()"
+                  >
+                    Close it with that finding
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  }
+</section>
