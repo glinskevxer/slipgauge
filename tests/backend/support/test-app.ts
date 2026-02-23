@@ -50,6 +50,7 @@ export interface ApiClient {
  */
 const MUTABLE_TABLES = [
   'audit_event',
+  'nonconformance',
   'environment_excursion',
   'environment_reading',
   'environment_limit',

@@ -10,6 +10,7 @@ import { ImpactModule } from './impact/impact.module';
 import { InstrumentModule } from './instrument/instrument.module';
 import { JobsModule } from './jobs/jobs.module';
 import { IntervalModule } from './interval/interval.module';
+import { NonconformityModule } from './nonconformity/nonconformity.module';
 import { ObservabilityModule } from './observability/observability.module';
 import { RecallModule } from './recall/recall.module';
 import { SecurityModule } from './security/security.module';
@@ -34,6 +35,7 @@ import { UsageModule } from './usage/usage.module';
     TraceabilityModule,
     IntervalModule,
     EnvironmentModule,
+    NonconformityModule,
     RecallModule,
     UsageModule,
     ImpactModule,
