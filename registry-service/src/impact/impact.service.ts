@@ -6,13 +6,15 @@ import { CalibrationCertificate } from '../calibration/calibration-certificate.e
 import { failing } from '../calibration/conformity';
 import { NotFoundError } from '../common/errors';
 import { Clock } from '../config/clock';
+import { NonconformitySeverity, NonconformitySource } from '../nonconformity/capa-stage';
+import { NonconformityService } from '../nonconformity/nonconformity.service';
 import { RegistryMetrics } from '../observability/registry-metrics.service';
 import type { CloseAssessmentDto, DisposeItemDto } from './dto/dispose-item.dto';
 import type { ImpactItemView, ImpactView } from './dto/impact.views';
 import { ImpactAnalyser } from './impact.analyser';
 import { ImpactAssessment } from './impact-assessment.entity';
 import { ImpactItem } from './impact-item.entity';
-import { ImpactStatus, needsCustomerContact } from './impact-severity';
+import { ImpactSeverity, ImpactStatus, needsCustomerContact } from './impact-severity';
 
 const ASSESSMENT_RELATIONS = { instrument: true, items: true } as const;
 
@@ -35,6 +37,7 @@ export class ImpactService {
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly analyser: ImpactAnalyser,
     private readonly metrics: RegistryMetrics,
+    private readonly nonconformities: NonconformityService,
     private readonly clock: Clock,
   ) {}
 
@@ -62,12 +65,39 @@ export class ImpactService {
     const assessment = await this.analyser.analyse(certificate, manager);
     const saved = await manager.getRepository(ImpactAssessment).save(assessment);
 
+    await this.raiseNonconformance(certificate, saved);
     this.metrics.impactRaised(saved.severity);
     this.log.warn(
       `assessment ${saved.id} raised from ${certificate.certificateNumber}, ` +
         `severity ${saved.severity}`,
     );
     return saved;
+  }
+
+  /**
+   * Opens a nonconformance beside the assessment.
+   *
+   * <p>They are not the same record and both are needed. The assessment answers
+   * where the error reached and what has to be recalled; the nonconformance
+   * answers why it happened and what stops it happening again. A laboratory
+   * that only keeps the first can recall the parts and will recall them again
+   * next year.
+   */
+  private async raiseNonconformance(
+    certificate: CalibrationCertificate,
+    assessment: ImpactAssessment,
+  ): Promise<void> {
+    await this.nonconformities.raiseFor(
+      NonconformitySource.OUT_OF_TOLERANCE,
+      certificate.certificateNumber,
+      assessment.severity === ImpactSeverity.HIGH
+        ? NonconformitySeverity.HIGH
+        : NonconformitySeverity.MEDIUM,
+      `${certificate.instrument.assetTag} came back out of tolerance`,
+      `Certificate ${certificate.certificateNumber} found ${certificate.asFoundVerdict} on ` +
+        `${certificate.performedOn}. Assessment ${assessment.id} covers ` +
+        `${assessment.windowFrom} to ${assessment.windowTo}.`,
+    );
   }
 
   async get(id: number): Promise<ImpactView> {

@@ -20,6 +20,8 @@ import type {
 } from './dto/environment.dto';
 import { CalibrationCertificate } from '../calibration/calibration-certificate.entity';
 import { CalibrationService } from '../calibration/calibration.service';
+import { NonconformitySeverity, NonconformitySource } from '../nonconformity/capa-stage';
+import { NonconformityService } from '../nonconformity/nonconformity.service';
 import {
   EnvironmentExcursion,
   EnvironmentLimitRecord,
@@ -54,6 +56,7 @@ export class EnvironmentService {
     private readonly certificates: Repository<CalibrationCertificate>,
     private readonly places: StorageLocationService,
     private readonly calibrations: CalibrationService,
+    private readonly nonconformities: NonconformityService,
     private readonly clock: Clock,
   ) {}
 
@@ -197,24 +200,89 @@ export class EnvironmentService {
       where: { location: { id: location.id }, startedAt: Between(from, to) },
     });
 
+    const matched = new Set<number>();
+    let opened = 0;
+
+    for (const excursion of found) {
+      // An excursion is identified by the room, the kind and the moment it
+      // started. The end moves as more readings arrive and the worst value can
+      // deepen, but the start does not, so the row is updated in place rather
+      // than replaced.
+      //
+      // This is not a tidiness point. The nonconformance raised off an
+      // excursion is keyed on its id, and deleting and reinserting the row on
+      // every sweep raised a second nonconformance for the same event and left
+      // the first pointing at nothing.
+      const existing = held.find(
+        (row) => row.kind === excursion.kind && sameStart(row, excursion),
+      );
+
+      if (existing) {
+        matched.add(existing.id);
+        if (existing.isAssessed()) {
+          continue;
+        }
+        existing.endedAt = excursion.endedAt ? new Date(excursion.endedAt) : null;
+        existing.severity = excursion.severity;
+        existing.worstValue = excursion.worstValue;
+        existing.readings = excursion.readings;
+        await this.excursions.save(existing);
+        continue;
+      }
+
+      const saved = await this.excursions.save(this.toRecord(location, excursion));
+
+      matched.add(saved.id);
+      opened += 1;
+      await this.raiseNonconformance(location, saved);
+    }
+
     let closed = 0;
 
+    // Anything held that the readings no longer support was a run that a late
+    // upload filled in. An assessed one stays: somebody wrote a finding against
+    // it and the finding is the record.
     for (const row of held) {
-      if (row.isAssessed()) {
+      if (matched.has(row.id) || row.isAssessed()) {
         continue;
       }
       await this.excursions.remove(row);
       closed += 1;
     }
 
-    for (const excursion of found) {
-      if (held.some((row) => row.isAssessed() && sameWindow(row, excursion))) {
-        continue;
-      }
-      await this.excursions.save(this.toRecord(location, excursion));
-    }
+    return { opened, closed };
+  }
 
-    return { opened: found.length, closed };
+  /**
+   * Raises a nonconformance for anything worse than minor.
+   *
+   * <p>Automatic, and only above minor. Every door held open would otherwise
+   * open a CAPA record, and a register full of doors is one nobody reads. The
+   * severity carries across: a major excursion is a high severity
+   * nonconformance and has to prove its corrective action worked.
+   *
+   * <p>Keyed on the excursion id, so a window swept twice does not raise two.
+   */
+  private async raiseNonconformance(
+    location: StorageLocation,
+    excursion: EnvironmentExcursion,
+  ): Promise<void> {
+    if (!excursion.putsWorkInQuestion()) {
+      return;
+    }
+    const raised = await this.nonconformities.raiseFor(
+      NonconformitySource.EXCURSION,
+      String(excursion.id),
+      excursion.severity === 'MAJOR'
+        ? NonconformitySeverity.HIGH
+        : NonconformitySeverity.MEDIUM,
+      `${location.code} outside its band`,
+      `${excursion.kind} in ${location.name}, worst ${excursion.worstValue} against a limit of ` +
+        `${excursion.limitValue}, over ${excursion.readings} readings from ` +
+        `${excursion.startedAt.toISOString()}.`,
+    );
+
+    this.log.warn(`${raised.reference} raised from excursion ${excursion.id}`);
   }
 
   /** Excursions in a room, newest first, unassessed ones only when asked. */
@@ -394,12 +462,9 @@ export class EnvironmentService {
   }
 }
 
-function sameWindow(row: EnvironmentExcursion, excursion: Excursion): boolean {
-  return (
-    row.kind === excursion.kind &&
-    row.startedAt.toISOString() === excursion.startedAt &&
-    (row.endedAt?.toISOString() ?? null) === excursion.endedAt
-  );
+/** Two readings of the same event start at the same moment. The end may move. */
+function sameStart(row: EnvironmentExcursion, excursion: Excursion): boolean {
+  return row.startedAt.toISOString() === excursion.startedAt;
 }
 
 export function toLimitView(record: EnvironmentLimitRecord): EnvironmentLimitView {

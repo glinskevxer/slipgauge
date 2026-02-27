@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { NonconformityModule } from '../nonconformity/nonconformity.module';
 import { CalibrationCertificate } from '../calibration/calibration-certificate.entity';
 import { CertificateStandard } from '../traceability/certificate-standard.entity';
 import { UsageRecord } from '../usage/usage-record.entity';
@@ -12,6 +13,7 @@ import { ImpactService } from './impact.service';
 
 @Module({
   imports: [
+    NonconformityModule,
     TypeOrmModule.forFeature([
       ImpactAssessment,
       ImpactItem,

@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CalibrationCertificate } from '../calibration/calibration-certificate.entity';
 import { CalibrationModule } from '../calibration/calibration.module';
 import { InstrumentModule } from '../instrument/instrument.module';
+import { NonconformityModule } from '../nonconformity/nonconformity.module';
 import { EnvironmentController } from './environment.controller';
 import {
   EnvironmentExcursion,
@@ -26,6 +27,7 @@ import { EnvironmentService } from './environment.service';
     ]),
     InstrumentModule,
     CalibrationModule,
+    NonconformityModule,
   ],
   controllers: [EnvironmentController],
   providers: [EnvironmentService],
