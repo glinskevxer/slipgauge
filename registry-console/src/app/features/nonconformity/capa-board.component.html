@@ -1,0 +1,205 @@
+<section class="capa">
+  <header class="capa__head">
+    <div>
+      <h1>Nonconformances</h1>
+      <p class="capa__sub">What went wrong, and what is being done so it does not again.</p>
+    </div>
+
+    @if (store.summary(); as summary) {
+      <div class="tiles tiles--tight">
+        <sg-count-tile [count]="summary.open" label="open" />
+        <sg-count-tile
+          [count]="summary.high"
+          label="high"
+          [tone]="summary.high > 0 ? 'bad' : 'neutral'"
+        />
+        <sg-count-tile
+          [count]="summary.escalating"
+          label="escalating"
+          [tone]="summary.escalating > 0 ? 'bad' : 'neutral'"
+        />
+        <sg-count-tile
+          [count]="summary.late"
+          label="late"
+          [tone]="summary.late > 0 ? 'warn' : 'neutral'"
+        />
+        <sg-count-tile [count]="summary.closedThisYear" label="closed this year" tone="ok" />
+      </div>
+    }
+  </header>
+
+  <nav class="stages" aria-label="Stages">
+    <button
+      type="button"
+      class="stage"
+      [class.stage--on]="store.stage() === null"
+      (click)="store.filterStage(null)"
+    >
+      Everything open
+    </button>
+    @for (stage of stages; track stage) {
+      <button
+        type="button"
+        class="stage"
+        [class.stage--on]="store.stage() === stage"
+        (click)="store.filterStage(stage)"
+      >
+        {{ stageLabel(stage) }}
+        <span class="stage__count">{{ countFor(stage) }}</span>
+      </button>
+    }
+    <label class="stages__closed">
+      <input
+        type="checkbox"
+        [checked]="store.includeClosed()"
+        (change)="store.showClosed($any($event.target).checked)"
+      />
+      Include closed
+    </label>
+  </nav>
+
+  @if (store.error(); as failure) {
+    <p class="capa__error" role="alert">{{ failure.message }}</p>
+  }
+
+  @if (store.loading()) {
+    <p class="capa__loading">Reading the register.</p>
+  } @else if (store.isEmpty()) {
+    <sg-empty-state
+      headline="Nothing outstanding"
+      detail="No nonconformance is open at this stage."
+    />
+  } @else {
+    <ul class="records">
+      @for (record of store.records(); track record.id) {
+        <li class="record" [class.record--on]="store.opened()?.reference === record.reference">
+          <button type="button" class="record__head" (click)="store.open(record.reference)">
+            <span class="record__ref">{{ record.reference }}</span>
+            <span class="record__severity" [class]="'record__severity--' + severityTone(record.severity)">
+              {{ record.severity }}
+            </span>
+            <span class="record__title">{{ record.title }}</span>
+            <span class="record__source">{{ sourceLabel(record.source) }}</span>
+            <span class="record__stage">{{ stageLabel(record.state) }}</span>
+            <span class="record__late" [class]="'record__late--' + latenessTone(record)">
+              {{ latenessInWords(record) }}
+            </span>
+            <span class="record__bar" [attr.aria-label]="progressPercent(record) + '% of the way'">
+              <span class="record__fill" [style.width.%]="progressPercent(record)"></span>
+            </span>
+          </button>
+
+          @if (store.opened()?.reference === record.reference) {
+            <div class="panel">
+              <p class="panel__detail">{{ record.detail }}</p>
+              <p class="panel__meta">
+                Raised by {{ record.raisedBy }} on {{ record.raisedOn | date: 'd MMM y' }}
+                @if (record.owner) {
+                  , owned by {{ record.owner }}
+                } @else {
+                  , nobody owns it
+                }
+                @if (record.dueOn) {
+                  , due {{ record.dueOn | date: 'd MMM y' }}
+                }
+              </p>
+
+              <dl class="answers">
+                @for (answer of answers(record); track answer.label) {
+                  <div [class.answers--empty]="!answer.text">
+                    <dt>{{ answer.label }}</dt>
+                    <dd>
+                      @if (answer.text) {
+                        {{ answer.text }}
+                        <span class="answers__on">{{ answer.on | date: 'd MMM y' }}</span>
+                      } @else {
+                        not written down yet
+                      }
+                    </dd>
+                  </div>
+                }
+              </dl>
+
+              @if (store.nextStage(); as stage) {
+                <div class="panel__do">
+                  <label class="field">
+                    {{ stageLabel(stage) }}
+                    <input
+                      type="text"
+                      name="answer"
+                      [value]="answer()"
+                      (input)="answer.set($any($event.target).value)"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    class="primary"
+                    [disabled]="!answer().trim()"
+                    (click)="recordAnswer()"
+                  >
+                    Record it
+                  </button>
+                </div>
+              }
+
+              @if (!record.owner && record.open) {
+                <div class="panel__do">
+                  <label class="field">
+                    Owner
+                    <input
+                      type="text"
+                      name="owner"
+                      [value]="owner()"
+                      (input)="owner.set($any($event.target).value)"
+                    />
+                  </label>
+                  <button type="button" [disabled]="!owner().trim()" (click)="assign()">
+                    Assign
+                  </button>
+                </div>
+              }
+
+              @if (store.canClose()) {
+                <div class="panel__do">
+                  <button type="button" class="primary" (click)="store.close()">
+                    Close {{ record.reference }}
+                  </button>
+                </div>
+              } @else if (record.open) {
+                <p class="panel__blocked">
+                  {{ record.severity }} severity, so this cannot close until
+                  {{ stageLabel(record.closesFrom).toLowerCase() }}.
+                </p>
+              }
+
+              @if (record.open) {
+                <details class="panel__abandon">
+                  <summary>Abandon it instead</summary>
+                  <div class="panel__do">
+                    <label class="field">
+                      Why
+                      <input
+                        type="text"
+                        name="abandonReason"
+                        [value]="abandonReason()"
+                        (input)="abandonReason.set($any($event.target).value)"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      class="danger"
+                      [disabled]="!abandonReason().trim()"
+                      (click)="abandon()"
+                    >
+                      Abandon
+                    </button>
+                  </div>
+                </details>
+              }
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  }
+</section>

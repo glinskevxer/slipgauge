@@ -52,6 +52,13 @@ export const APP_ROUTES: Routes = [
     loadChildren: () => import('./features/impact/impact.routes').then((m) => m.IMPACT_ROUTES),
   },
   {
+    path: 'nonconformities',
+    title: 'Nonconformances',
+    canActivate: [signedInGuard],
+    loadComponent: () =>
+      import('./features/nonconformity/capa-board.component').then((m) => m.CapaBoardComponent),
+  },
+  {
     path: 'rooms',
     title: 'Room log',
     canActivate: [signedInGuard],
