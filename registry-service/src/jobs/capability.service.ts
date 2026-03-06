@@ -7,6 +7,7 @@ import { Clock } from '../config/clock';
 import { InstrumentClass } from '../instrument/instrument-class.entity';
 import { Instrument } from '../instrument/instrument.entity';
 import { InstrumentStatus } from '../instrument/instrument.enums';
+import { ScopeService } from '../scope/scope.service';
 import type { ClassCapability } from './review/review-checker';
 
 /** What the reference standards in one discipline can reach, right now. */
@@ -30,6 +31,7 @@ export class CapabilityService {
     @InjectRepository(InstrumentClass) private readonly classes: Repository<InstrumentClass>,
     @InjectRepository(ToleranceProfile) private readonly profiles: Repository<ToleranceProfile>,
     @InjectRepository(Instrument) private readonly instruments: Repository<Instrument>,
+    private readonly scope: ScopeService,
     private readonly clock: Clock,
   ) {}
 
@@ -52,10 +54,12 @@ export class CapabilityService {
     const coverage = await this.coverageByDiscipline([
       ...new Set(classes.map((type) => type.discipline)),
     ]);
+    const scope = await this.scope.coverFor(classes.map((type) => type.id));
 
     return new Map(
       classes.map((type) => {
         const reach = coverage.get(type.discipline);
+        const covered = scope.get(type.id);
 
         return [
           type.id,
@@ -65,9 +69,13 @@ export class CapabilityService {
             discipline: type.discipline,
             hasToleranceProfile: profiled.has(type.id),
             referenceAvailable: reach?.available ?? false,
-            accredited: type.accredited,
+            accredited: covered?.accredited ?? false,
             methodReference: type.methodReference,
-            coveredTo: reach?.coveredTo ?? null,
+            // What the laboratory can reach and what it is accredited to reach
+            // are different numbers and the smaller one is the one that binds.
+            // Taking the standards alone let a job be accepted at a range the
+            // schedule had never covered.
+            coveredTo: narrowest(reach?.coveredTo ?? null, covered?.coveredTo ?? null),
           },
         ];
       }),
@@ -133,4 +141,15 @@ export class CapabilityService {
       ]),
     );
   }
+}
+
+/** The lower of two reaches, treating a missing one as no limit of its own. */
+function narrowest(a: number | null, b: number | null): number | null {
+  if (a === null) {
+    return b;
+  }
+  if (b === null) {
+    return a;
+  }
+  return Math.min(a, b);
 }

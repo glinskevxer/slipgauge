@@ -15,6 +15,7 @@ import { Competence1736000000016 } from './1736000000016-Competence';
 import { Environment1736000000017 } from './1736000000017-Environment';
 import { CertificateRoom1736000000018 } from './1736000000018-CertificateRoom';
 import { Nonconformity1736000000019 } from './1736000000019-Nonconformity';
+import { AccreditationScope1736000000020 } from './1736000000020-AccreditationScope';
 import { ProfileClassLinks1736000000004 } from './1736000000004-ProfileClassLinks';
 import { ToleranceProfiles1736000000003 } from './1736000000003-ToleranceProfiles';
 
@@ -45,4 +46,5 @@ export const MIGRATIONS = [
   Environment1736000000017,
   CertificateRoom1736000000018,
   Nonconformity1736000000019,
+  AccreditationScope1736000000020,
 ];

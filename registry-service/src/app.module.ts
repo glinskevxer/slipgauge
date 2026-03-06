@@ -13,6 +13,7 @@ import { IntervalModule } from './interval/interval.module';
 import { NonconformityModule } from './nonconformity/nonconformity.module';
 import { ObservabilityModule } from './observability/observability.module';
 import { RecallModule } from './recall/recall.module';
+import { ScopeModule } from './scope/scope.module';
 import { SecurityModule } from './security/security.module';
 import { TraceabilityModule } from './traceability/traceability.module';
 import { UsageModule } from './usage/usage.module';
@@ -29,6 +30,7 @@ import { UsageModule } from './usage/usage.module';
     ObservabilityModule,
     SecurityModule,
     InstrumentModule,
+    ScopeModule,
     CompetenceModule,
     JobsModule,
     CalibrationModule,

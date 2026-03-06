@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { InstrumentClass } from '../instrument/instrument-class.entity';
 import { InstrumentModule } from '../instrument/instrument.module';
+import { ScopeModule } from '../scope/scope.module';
 import { CalibrationCertificate } from '../calibration/calibration-certificate.entity';
 import { ToleranceProfile } from '../calibration/tolerance-profile.entity';
 import { Instrument } from '../instrument/instrument.entity';
@@ -39,7 +40,10 @@ import { JobService } from './job.service';
       ToleranceProfile,
       Instrument,
       CalibrationCertificate,
-    ]), InstrumentModule],
+    ]),
+    InstrumentModule,
+    ScopeModule,
+  ],
   controllers: [CustomerController, JobController],
   providers: [
     CustomerService,
