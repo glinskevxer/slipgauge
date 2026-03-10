@@ -261,3 +261,173 @@ describe('the schedule of accreditation', () => {
     await quality.post('/api/scope/9999/lapse').expect(404);
   });
 });
+
+/**
+ * What the certificate says about itself. Fixed when the sheet is filed, and
+ * read back off the certificate rather than worked out again.
+ */
+describe('what a certificate states', () => {
+  let harness: TestApp;
+  let quality: ReturnType<TestApp['api']>;
+  let register: RegisterFixtures;
+  let seeded: Record<string, unknown>[] = [];
+
+  const OUTSIDE_STANDARD = {
+    externalRef: 'NPL 2024/117',
+    externalLab: 'National Physical Laboratory',
+    externalCertificateNumber: 'NPL-2024-117',
+    externalAccreditation: 'UKAS 0001',
+    externalValidFrom: '2024-11-01',
+    externalValidTo: '2026-10-31',
+    role: 'REFERENCE',
+  };
+
+  beforeAll(async () => {
+    harness = await createTestApp({ now: TODAY });
+    quality = harness.api(harness.tokenFor(Role.QUALITY_MANAGER, Role.METROLOGIST));
+    register = new RegisterFixtures(harness.dataSource);
+    seeded = await harness.dataSource.query('select * from accreditation_scope');
+  });
+
+  afterAll(async () => {
+    await harness.dataSource.query('delete from accreditation_scope');
+
+    for (const row of seeded) {
+      await harness.dataSource.query(
+        `insert into accreditation_scope
+           (id, schedule_ref, discipline, class_id, measurand, unit, range_low, range_high,
+            cmc_absolute, cmc_ppm, valid_from, valid_to, note)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+        [
+          row['id'],
+          row['schedule_ref'],
+          row['discipline'],
+          row['class_id'],
+          row['measurand'],
+          row['unit'],
+          row['range_low'],
+          row['range_high'],
+          row['cmc_absolute'],
+          row['cmc_ppm'],
+          row['valid_from'],
+          row['valid_to'],
+          row['note'],
+        ],
+      );
+    }
+    await harness.close();
+  });
+
+  beforeEach(async () => {
+    await harness.reset();
+    await harness.dataSource.query('delete from accreditation_scope');
+    await new CompetenceFixtures(harness.dataSource).grant(
+      'r.okonjo',
+      Discipline.DIMENSIONAL,
+      CompetenceLevel.AUTHORISED,
+    );
+    await register.micrometer('SG-0001');
+  });
+
+  async function scopeTo(rangeHigh: number) {
+    const type = await harness.dataSource.query(
+      `select id from instrument_class where code = 'MIC-EXT'`,
+    );
+    await harness.dataSource.query(
+      `insert into accreditation_scope
+         (schedule_ref, discipline, class_id, measurand, unit, range_low, range_high,
+          cmc_absolute, valid_from)
+       values ('UKAS-0001/12', 'DIMENSIONAL', $1, 'External micrometer', 'mm', 0, $2,
+               0.0005, '2025-01-06')`,
+      [type[0].id, rangeHigh],
+    );
+  }
+
+  function sheet(nominals: number[], overrides: Record<string, unknown> = {}) {
+    return {
+      certificateNumber: 'CAL-8001',
+      assetTag: 'SG-0001',
+      performedOn: '2025-11-18',
+      issuedOn: '2025-11-19',
+      performedBy: 'r.okonjo',
+      issuingLab: 'Slipgauge Metrology',
+      points: nominals.map((nominal, index) => ({
+        sequenceNo: index + 1,
+        nominal,
+        asFound: nominal + 0.0004,
+        expandedUncertainty: 0.0005,
+      })),
+      standards: [OUTSIDE_STANDARD],
+      ...overrides,
+    };
+  }
+
+  it('carries the mark and names the line when every point is covered', async () => {
+    await scopeTo(25);
+
+    const filed = await quality.post('/api/certificates').send(sheet([5, 20])).expect(201);
+
+    expect(filed.body).toMatchObject({
+      accredited: true,
+      scopeRef: 'UKAS-0001/12',
+      acceptancePolicy: 'MANAGED_RISK',
+    });
+    expect(filed.body.decisionRule).toContain('managed risk');
+    expect(filed.body.decisionRule).toContain('reference UKAS-0001/12');
+  });
+
+  it('drops the mark when one point falls outside the range', async () => {
+    await scopeTo(10);
+
+    const filed = await quality.post('/api/certificates').send(sheet([5, 20])).expect(201);
+
+    expect(filed.body.accredited).toBe(false);
+    expect(filed.body.scopeRef).toBeNull();
+    expect(filed.body.decisionRule).toContain('unaccredited result');
+  });
+
+  it('drops the mark when there is no schedule line at all', async () => {
+    const filed = await quality.post('/api/certificates').send(sheet([20])).expect(201);
+
+    expect(filed.body.accredited).toBe(false);
+  });
+
+  it('states whichever rule the sheet was filed under', async () => {
+    await scopeTo(25);
+
+    const filed = await quality
+      .post('/api/certificates')
+      .send(sheet([20], { acceptancePolicy: 'SHARED_RISK' }))
+      .expect(201);
+
+    expect(filed.body.acceptancePolicy).toBe('SHARED_RISK');
+    expect(filed.body.decisionRule).toContain('simple acceptance');
+  });
+
+  it('never claims the mark for another laboratory work', async () => {
+    await scopeTo(25);
+
+    const filed = await quality
+      .post('/api/certificates')
+      .send(
+        sheet([20], {
+          externalLab: true,
+          issuingLab: 'National Physical Laboratory',
+          performedBy: 'somebody at NPL',
+        }),
+      )
+      .expect(201);
+
+    expect(filed.body.accredited).toBe(false);
+  });
+
+  it('does not change what an old certificate claimed when the schedule moves', async () => {
+    await scopeTo(25);
+    const filed = await quality.post('/api/certificates').send(sheet([20])).expect(201);
+
+    await harness.dataSource.query('delete from accreditation_scope');
+
+    const read = await quality.get(`/api/certificates/${filed.body.id}`).expect(200);
+    expect(read.body).toMatchObject({ accredited: true, scopeRef: 'UKAS-0001/12' });
+  });
+});

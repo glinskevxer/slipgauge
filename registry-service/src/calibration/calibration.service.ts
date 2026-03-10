@@ -11,6 +11,7 @@ import { RegistryMetrics } from '../observability/registry-metrics.service';
 import { Instrument } from '../instrument/instrument.entity';
 import { StorageLocation } from '../instrument/storage-location.entity';
 import { StorageLocationService } from '../instrument/storage-location.service';
+import { ScopeService } from '../scope/scope.service';
 import { IntervalService } from '../interval/interval.service';
 import {
   CertificateStandard,
@@ -72,6 +73,7 @@ export class CalibrationService {
     private readonly mapper: CalibrationMapper,
     private readonly competence: CompetenceService,
     private readonly places: StorageLocationService,
+    private readonly scope: ScopeService,
     private readonly dataSource: DataSource,
     private readonly clock: Clock,
   ) {}
@@ -136,6 +138,12 @@ export class CalibrationService {
 
     this.addPoints(certificate, instrument, profile, request);
     certificate.rollUpVerdicts();
+
+    // The rule and the schedule line are fixed here and never worked out again.
+    // Both are facts about the day the sheet was filed, and a certificate that
+    // recomputed them would quietly change what it claimed when the schedule
+    // was next reissued.
+    certificate.stateUnder(policyOf(request), await this.scopeRefFor(instrument, request));
 
     // The certificate, its edges and the chain check all happen on one
     // connection. Throwing from inside rolls the whole sheet back, so a
@@ -415,6 +423,37 @@ export class CalibrationService {
    * our register and pretending otherwise would put their work into our own
    * excursion reports.
    */
+  /**
+   * The schedule line this measurement was made under, or null.
+   *
+   * <p>Every point has to be covered. A sheet that walks from ten to four
+   * hundred millimetres on a schedule granted to a hundred is not an accredited
+   * sheet for the first half and an unaccredited one for the rest: it is one
+   * certificate and it does not carry the mark.
+   *
+   * <p>Work filed on behalf of another laboratory is never ours to claim.
+   */
+  private async scopeRefFor(
+    instrument: Instrument,
+    request: RecordCalibrationDto,
+  ): Promise<string | null> {
+    if (request.externalLab) {
+      return null;
+    }
+    const nominals = (request.points ?? []).map((point) => point.nominal);
+
+    if (nominals.length === 0) {
+      return null;
+    }
+    const lines = await Promise.all(
+      nominals.map((nominal) =>
+        this.scope.lineFor(instrument.instrumentClass.id, nominal, request.performedOn),
+      ),
+    );
+
+    return lines.every((line) => line !== null) ? lines[0]!.scheduleRef : null;
+  }
+
   private async roomFor(
     request: RecordCalibrationDto,
     instrument: Instrument,

@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { CompetenceModule } from '../competence/competence.module';
 import { InstrumentModule } from '../instrument/instrument.module';
+import { ScopeModule } from '../scope/scope.module';
 import { ImpactModule } from '../impact/impact.module';
 import { IntervalModule } from '../interval/interval.module';
 import { TraceabilityModule } from '../traceability/traceability.module';
@@ -29,6 +30,7 @@ import { ToleranceProfileService } from './tolerance-profile.service';
     ]),
     SecurityModule,
     InstrumentModule,
+    ScopeModule,
     TraceabilityModule,
     IntervalModule,
     ImpactModule,

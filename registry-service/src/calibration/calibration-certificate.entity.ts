@@ -14,7 +14,7 @@ import { RuleViolationError } from '../common/errors';
 import { numericTransformer } from '../common/numeric';
 import { Instrument } from '../instrument/instrument.entity';
 import { StorageLocation } from '../instrument/storage-location.entity';
-import { Verdict, worseOf } from './conformity';
+import { AcceptancePolicy, Verdict, statementsFor, worseOf } from './conformity';
 import { MeasurementPoint } from './measurement-point.entity';
 
 /**
@@ -98,6 +98,23 @@ export class CalibrationCertificate extends AuditedEntity {
 
   @RelationId((certificate: CalibrationCertificate) => certificate.performedIn)
   performedInId: number | null;
+
+  /**
+   * The decision rule the verdicts on this certificate were worked out under.
+   * Nullable only because certificates filed before the column existed have no
+   * honest answer, and inventing one would be worse than saying nothing.
+   */
+  @Column({ name: 'acceptance_policy', type: 'varchar', length: 24, nullable: true })
+  acceptancePolicy: AcceptancePolicy | null;
+
+  @Column({ type: 'boolean', default: false })
+  accredited: boolean;
+
+  @Column({ name: 'scope_ref', type: 'varchar', length: 64, nullable: true })
+  scopeRef: string | null;
+
+  @Column({ name: 'decision_rule', type: 'varchar', length: 600, nullable: true })
+  decisionRule: string | null;
 
   @Column({ name: 'withdrawn_at', type: 'timestamptz', nullable: true })
   withdrawnAt: Date | null;
@@ -207,6 +224,23 @@ export class CalibrationCertificate extends AuditedEntity {
   recordAmbient(temperature: number | null, humidity: number | null): void {
     this.ambientTemperature = temperature;
     this.ambientHumidity = humidity;
+  }
+
+  /**
+   * Fixes the decision rule and the accreditation claim, and writes the
+   * sentence that states both. Called once, when the sheet is filed: working
+   * either out again later would read them off a schedule that has moved.
+   */
+  stateUnder(policy: AcceptancePolicy, scopeRef: string | null): void {
+    this.acceptancePolicy = policy;
+    this.accredited = scopeRef !== null;
+    this.scopeRef = scopeRef;
+    this.decisionRule = statementsFor(policy, scopeRef);
+  }
+
+  /** True when the certificate carries the accreditation mark. */
+  carriesTheMark(): boolean {
+    return this.accredited && !this.isWithdrawn();
   }
 }
 
