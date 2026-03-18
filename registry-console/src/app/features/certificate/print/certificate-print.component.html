@@ -113,6 +113,12 @@
     <section class="paper__block">
       <h2>Statement of conformity</h2>
       <p class="paper__statement">{{ sheet.statement }}</p>
+      @for (declaration of sheet.declarations; track declaration) {
+        <p class="paper__declaration">{{ declaration }}</p>
+      }
+      @if (sheet.marked) {
+        <p class="paper__mark">Accredited calibration, schedule {{ sheet.certificate.scopeRef }}</p>
+      }
       @if (sheet.certificate.remarks) {
         <p class="paper__remarks">{{ sheet.certificate.remarks }}</p>
       }

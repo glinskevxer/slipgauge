@@ -177,3 +177,29 @@
     break-inside: avoid;
   }
 }
+
+.paper__declaration {
+  margin: var(--sg-space-2) 0 0;
+  color: var(--sg-ink-muted);
+  font-size: var(--sg-text-sm);
+}
+
+// The mark is the one thing on the page a customer looks for, so it is set
+// apart rather than in the run of declarations.
+.paper__mark {
+  display: inline-block;
+  margin: var(--sg-space-3) 0 0;
+  padding: var(--sg-space-1) var(--sg-space-3);
+  border: 1px solid var(--sg-ink);
+  border-radius: var(--sg-radius-sm);
+  font-size: var(--sg-text-sm);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+@media print {
+  .paper__mark {
+    border-color: #000;
+    color: #000;
+  }
+}

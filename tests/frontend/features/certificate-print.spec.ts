@@ -1,6 +1,7 @@
 import { certificate, detail, point } from '@fixtures';
 import {
   conformityStatement,
+  declarationsOf,
   format,
   missingContent,
   signed,
@@ -149,5 +150,48 @@ describe('laying the page out', () => {
     expect(format(5)).toBe('5.0');
     expect(format(0.0005)).toBe('0.0005');
     expect(format(20.1)).toBe('20.1');
+  });
+});
+
+describe('what the certificate declares', () => {
+  it('splits the service sentences into separate paragraphs', () => {
+    expect(
+      declarationsOf(
+        certificate('CAL-1', {
+          decisionRule: 'One sentence. A second sentence. And a third.',
+        }),
+      ),
+    ).toEqual(['One sentence.', 'A second sentence.', 'And a third.']);
+  });
+
+  it('says nothing was recorded rather than inventing a rule', () => {
+    expect(declarationsOf(certificate('CAL-1', { decisionRule: null }))).toEqual([
+      'No decision rule was recorded against this certificate.',
+    ]);
+  });
+
+  it('marks a certificate that carries the accreditation', () => {
+    const sheet = toPrintable(certificate('CAL-1'), detail('SG-000101'));
+
+    expect(sheet.marked).toBe(true);
+    expect(sheet.declarations.join(' ')).toContain('UKAS-0001/12');
+  });
+
+  it('does not mark an unaccredited one', () => {
+    const sheet = toPrintable(
+      certificate('CAL-1', { accredited: false, scopeRef: null }),
+      detail('SG-000101'),
+    );
+
+    expect(sheet.marked).toBe(false);
+  });
+
+  it('does not mark a withdrawn one, however it was issued', () => {
+    const sheet = toPrintable(
+      certificate('CAL-1', { withdrawnAt: '2025-06-01T09:00:00Z' }),
+      detail('SG-000101'),
+    );
+
+    expect(sheet.marked).toBe(false);
   });
 });

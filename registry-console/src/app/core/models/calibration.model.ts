@@ -47,6 +47,12 @@ export interface CertificateView {
   readonly asLeftVerdict: Verdict;
   readonly adjusted: boolean;
   readonly remarks: string | null;
+  /** The rule the verdicts were judged under, as it stood on the day. */
+  readonly acceptancePolicy: AcceptancePolicy | null;
+  readonly accredited: boolean;
+  readonly scopeRef: string | null;
+  /** The two sentences the service wrote when the sheet was filed. */
+  readonly decisionRule: string | null;
   readonly live: boolean;
   readonly withdrawnAt: string | null;
   readonly withdrawnReason: string | null;

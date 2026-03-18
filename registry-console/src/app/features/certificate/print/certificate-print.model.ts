@@ -21,6 +21,14 @@ export interface PrintableCertificate {
   readonly rows: readonly PrintablePoint[];
   readonly missing: readonly string[];
   readonly statement: string;
+  /**
+   * The rule and accreditation sentences the service fixed when the sheet was
+   * filed. Read off the certificate rather than worded here: the console must
+   * never be able to print a claim the service did not make.
+   */
+  readonly declarations: readonly string[];
+  /** True when this certificate may show the accreditation mark. */
+  readonly marked: boolean;
 }
 
 export interface PrintablePoint {
@@ -93,6 +101,24 @@ export function conformityStatement(certificate: CertificateView): string {
   }
 }
 
+/**
+ * The declarations, split into sentences so they set as separate paragraphs.
+ *
+ * <p>A certificate filed before the register recorded a decision rule has none,
+ * and prints a line saying so rather than inventing one. An assessor reading an
+ * old certificate needs to see that the rule was not recorded, not to be told a
+ * rule that nobody chose.
+ */
+export function declarationsOf(certificate: CertificateView): readonly string[] {
+  if (!certificate.decisionRule) {
+    return ['No decision rule was recorded against this certificate.'];
+  }
+  return certificate.decisionRule
+    .split(/(?<=\.)\s+/)
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => sentence.length > 0);
+}
+
 export function toPrintable(
   certificate: CertificateView,
   instrument: InstrumentDetail,
@@ -105,6 +131,8 @@ export function toPrintable(
       .map((point) => row(point)),
     missing: missingContent(certificate),
     statement: conformityStatement(certificate),
+    declarations: declarationsOf(certificate),
+    marked: certificate.accredited && certificate.withdrawnAt === null,
   };
 }
 

@@ -140,6 +140,12 @@ export function certificate(
     asLeftVerdict: 'PASS',
     adjusted: false,
     remarks: null,
+    acceptancePolicy: 'MANAGED_RISK',
+    accredited: true,
+    scopeRef: 'UKAS-0001/12',
+    decisionRule:
+      'Conformity stated under a managed risk decision rule. This measurement falls inside ' +
+      'the laboratory schedule of accreditation, reference UKAS-0001/12.',
     live: true,
     withdrawnAt: null,
     withdrawnReason: null,
