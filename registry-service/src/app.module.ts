@@ -12,6 +12,7 @@ import { JobsModule } from './jobs/jobs.module';
 import { IntervalModule } from './interval/interval.module';
 import { NonconformityModule } from './nonconformity/nonconformity.module';
 import { ObservabilityModule } from './observability/observability.module';
+import { ProficiencyModule } from './proficiency/proficiency.module';
 import { RecallModule } from './recall/recall.module';
 import { ScopeModule } from './scope/scope.module';
 import { SecurityModule } from './security/security.module';
@@ -38,6 +39,7 @@ import { UsageModule } from './usage/usage.module';
     IntervalModule,
     EnvironmentModule,
     NonconformityModule,
+    ProficiencyModule,
     RecallModule,
     UsageModule,
     ImpactModule,
