@@ -8,6 +8,7 @@ import {
   daysUntil,
   withoutAnApprover,
 } from '@core/models/competence.model';
+import { LoadingState } from '@core/loading-state';
 import { NotificationService } from '@core/notifications/notification.service';
 
 const EMPTY: CompetenceMatrix = { people: [], disciplines: [], cells: [] };
@@ -31,8 +32,7 @@ export class CompetenceStore {
   private readonly heldState = signal<readonly CompetenceView[]>([]);
   private readonly horizonState = signal(60);
   private readonly todayState = signal(new Date().toISOString().slice(0, 10));
-  private readonly loadingState = signal(false);
-  private readonly errorState = signal<RegistryError | null>(null);
+  private readonly state = new LoadingState();
 
   readonly matrix = this.matrixState.asReadonly();
   readonly expiring = this.expiringState.asReadonly();
@@ -40,11 +40,11 @@ export class CompetenceStore {
   readonly held = this.heldState.asReadonly();
   readonly horizon = this.horizonState.asReadonly();
   readonly today = this.todayState.asReadonly();
-  readonly loading = this.loadingState.asReadonly();
-  readonly error = this.errorState.asReadonly();
+  readonly loading = this.state.loading;
+  readonly error = this.state.error;
 
   readonly isEmpty = computed(
-    () => !this.loadingState() && this.matrixState().people.length === 0,
+    () => !this.state.loading() && this.matrixState().people.length === 0,
   );
 
   /** Disciplines the laboratory works in with nobody able to sign anything off. */
@@ -58,20 +58,7 @@ export class CompetenceStore {
   );
 
   load(): void {
-    this.loadingState.set(true);
-    this.errorState.set(null);
-
-    this.api.matrix().subscribe({
-      next: (matrix) => {
-        this.matrixState.set(matrix);
-        this.loadingState.set(false);
-      },
-      error: (error: RegistryError) => {
-        this.errorState.set(error);
-        this.loadingState.set(false);
-      },
-    });
-
+    this.state.track(this.api.matrix(), (matrix) => this.matrixState.set(matrix));
     this.loadExpiring();
   }
 
@@ -126,9 +113,10 @@ export class CompetenceStore {
   }
 
   private loadExpiring(): void {
-    this.api.expiring(this.horizonState()).subscribe({
-      next: (rows) => this.expiringState.set(rows),
-      error: () => this.expiringState.set([]),
-    });
+    this.state.beside(
+      this.api.expiring(this.horizonState()),
+      (rows) => this.expiringState.set(rows),
+      () => this.expiringState.set([]),
+    );
   }
 }

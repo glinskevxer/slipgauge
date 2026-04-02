@@ -3,7 +3,7 @@ import { forkJoin } from 'rxjs';
 
 import { ImpactApiService } from '@core/api/impact-api.service';
 import { RecallApiService, RecallSummary } from '@core/api/recall-api.service';
-import { RegistryError } from '@core/errors/problem';
+import { LoadingState } from '@core/loading-state';
 import { ImpactView } from '@core/models/impact.model';
 import { RecallEntry, RecallStanding } from '@core/models/recall.model';
 import { BarDatum } from '@shared/charts/bar-chart.component';
@@ -25,13 +25,12 @@ export class DashboardStore {
   private readonly boardState = signal<readonly RecallEntry[]>([]);
   private readonly summaryState = signal<RecallSummary | null>(null);
   private readonly assessmentsState = signal<readonly ImpactView[]>([]);
-  private readonly loadingState = signal(false);
-  private readonly errorState = signal<RegistryError | null>(null);
+  private readonly state = new LoadingState();
 
   readonly summary = this.summaryState.asReadonly();
   readonly assessments = this.assessmentsState.asReadonly();
-  readonly loading = this.loadingState.asReadonly();
-  readonly error = this.errorState.asReadonly();
+  readonly loading = this.state.loading;
+  readonly error = this.state.error;
 
   readonly overdue = computed(() => this.summaryState()?.overdue ?? 0);
   readonly unscheduled = computed(() => this.summaryState()?.unscheduled ?? 0);
@@ -107,28 +106,21 @@ export class DashboardStore {
   );
 
   readonly nothingWrong = computed(
-    () => this.overdue() === 0 && this.openAssessments() === 0 && !this.loadingState(),
+    () => this.overdue() === 0 && this.openAssessments() === 0 && !this.state.loading(),
   );
 
   load(): void {
-    this.loadingState.set(true);
-    this.errorState.set(null);
-
-    forkJoin({
-      board: this.recalls.board(HORIZON_DAYS),
-      summary: this.recalls.summary(HORIZON_DAYS),
-      assessments: this.impact.open(),
-    }).subscribe({
-      next: ({ board, summary, assessments }) => {
+    this.state.track(
+      forkJoin({
+        board: this.recalls.board(HORIZON_DAYS),
+        summary: this.recalls.summary(HORIZON_DAYS),
+        assessments: this.impact.open(),
+      }),
+      ({ board, summary, assessments }) => {
         this.boardState.set(board);
         this.summaryState.set(summary);
         this.assessmentsState.set(assessments);
-        this.loadingState.set(false);
       },
-      error: (error: RegistryError) => {
-        this.errorState.set(error);
-        this.loadingState.set(false);
-      },
-    });
+    );
   }
 }

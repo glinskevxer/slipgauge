@@ -3,6 +3,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { JobApiService, ReviewPreview } from '@core/api/job-api.service';
 import { RegistryError } from '@core/errors/problem';
 import { AcceptancePolicy, JobView, LineProgress } from '@core/models/job.model';
+import { LoadingState } from '@core/loading-state';
 import { NotificationService } from '@core/notifications/notification.service';
 
 /**
@@ -23,17 +24,16 @@ export class JobSheetStore {
   private readonly progressState = signal<readonly LineProgress[]>([]);
   private readonly previewState = signal<ReviewPreview | null>(null);
   private readonly policyState = signal<AcceptancePolicy | null>(null);
-  private readonly loadingState = signal(false);
+  private readonly state = new LoadingState();
   private readonly savingState = signal(false);
-  private readonly errorState = signal<RegistryError | null>(null);
 
   readonly job = this.jobState.asReadonly();
   readonly progress = this.progressState.asReadonly();
   readonly preview = this.previewState.asReadonly();
   readonly policy = this.policyState.asReadonly();
-  readonly loading = this.loadingState.asReadonly();
+  readonly loading = this.state.loading;
   readonly saving = this.savingState.asReadonly();
-  readonly error = this.errorState.asReadonly();
+  readonly error = this.state.error;
 
   readonly review = computed(() => this.jobState()?.review ?? null);
 
@@ -54,22 +54,12 @@ export class JobSheetStore {
   );
 
   load(reference: string): void {
-    this.loadingState.set(true);
-    this.errorState.set(null);
-
-    this.api.get(reference).subscribe({
-      next: (job) => {
-        this.jobState.set(job);
-        this.loadingState.set(false);
-        this.loadProgress(reference);
-        if (job.state === 'RECEIVED' || job.state === 'UNDER_REVIEW') {
-          this.refreshPreview(reference);
-        }
-      },
-      error: (error: RegistryError) => {
-        this.errorState.set(error);
-        this.loadingState.set(false);
-      },
+    this.state.track(this.api.get(reference), (job) => {
+      this.jobState.set(job);
+      this.loadProgress(reference);
+      if (job.state === 'RECEIVED' || job.state === 'UNDER_REVIEW') {
+        this.refreshPreview(reference);
+      }
     });
   }
 

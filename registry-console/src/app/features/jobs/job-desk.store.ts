@@ -3,6 +3,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { JobApiService } from '@core/api/job-api.service';
 import { RegistryError } from '@core/errors/problem';
 import { JobDeskSummary, JobState, JobSummary, awaitingDesk } from '@core/models/job.model';
+import { LoadingState } from '@core/loading-state';
 import { NotificationService } from '@core/notifications/notification.service';
 
 /** The tabs across the desk, and the state each one filters on. */
@@ -33,15 +34,14 @@ export class JobDeskStore {
   private readonly summaryState = signal<JobDeskSummary | null>(null);
   private readonly laneState = signal<DeskLane>('everything');
   private readonly customerState = signal<string | null>(null);
-  private readonly loadingState = signal(false);
-  private readonly errorState = signal<RegistryError | null>(null);
+  private readonly state = new LoadingState();
   private readonly totalState = signal(0);
 
   readonly summary = this.summaryState.asReadonly();
   readonly lane = this.laneState.asReadonly();
   readonly customer = this.customerState.asReadonly();
-  readonly loading = this.loadingState.asReadonly();
-  readonly error = this.errorState.asReadonly();
+  readonly loading = this.state.loading;
+  readonly error = this.state.error;
   readonly total = this.totalState.asReadonly();
 
   readonly jobs = computed(() => {
@@ -60,36 +60,28 @@ export class JobDeskStore {
 
   readonly waitingOnUs = computed(() => this.jobs().filter((job) => awaitingDesk(job.state)));
 
-  readonly isEmpty = computed(() => !this.loadingState() && this.jobs().length === 0);
+  readonly isEmpty = computed(() => !this.state.loading() && this.jobs().length === 0);
 
   load(): void {
-    this.loadingState.set(true);
-    this.errorState.set(null);
-
     const lane = this.laneState();
 
-    this.api
-      .search({
+    this.state.track(
+      this.api.search({
         state: LANE_STATE[lane],
         customer: this.customerState() ?? undefined,
         size: 200,
-      })
-      .subscribe({
-        next: (page) => {
-          this.jobsState.set(page.items);
-          this.totalState.set(page.totalItems);
-          this.loadingState.set(false);
-        },
-        error: (error: RegistryError) => {
-          this.errorState.set(error);
-          this.loadingState.set(false);
-        },
-      });
+      }),
+      (page) => {
+        this.jobsState.set(page.items);
+        this.totalState.set(page.totalItems);
+      },
+    );
 
-    this.api.desk().subscribe({
-      next: (summary) => this.summaryState.set(summary),
-      error: () => this.summaryState.set(null),
-    });
+    this.state.beside(
+      this.api.desk(),
+      (summary) => this.summaryState.set(summary),
+      () => this.summaryState.set(null),
+    );
   }
 
   show(lane: DeskLane): void {

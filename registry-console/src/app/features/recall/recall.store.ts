@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
 import { RecallApiService, RecallSummary } from '@core/api/recall-api.service';
-import { RegistryError } from '@core/errors/problem';
+import { LoadingState } from '@core/loading-state';
 import { Criticality } from '@core/models/instrument.model';
 import { RecallEntry, RecallStanding } from '@core/models/recall.model';
 
@@ -23,16 +23,15 @@ export class RecallStore {
   private readonly groupingState = signal<RecallGrouping>('standing');
   private readonly criticalityState = signal<ReadonlySet<Criticality>>(new Set());
   private readonly referenceOnlyState = signal(false);
-  private readonly loadingState = signal(false);
-  private readonly errorState = signal<RegistryError | null>(null);
+  private readonly state = new LoadingState();
 
   readonly summary = this.summaryState.asReadonly();
   readonly horizon = this.horizonState.asReadonly();
   readonly grouping = this.groupingState.asReadonly();
   readonly criticalities = this.criticalityState.asReadonly();
   readonly referenceOnly = this.referenceOnlyState.asReadonly();
-  readonly loading = this.loadingState.asReadonly();
-  readonly error = this.errorState.asReadonly();
+  readonly loading = this.state.loading;
+  readonly error = this.state.error;
 
   readonly entries = computed(() => {
     const chosen = this.criticalityState();
@@ -78,28 +77,18 @@ export class RecallStore {
     [...this.entries()].sort((a, b) => a.daysUntilDue - b.daysUntilDue),
   );
 
-  readonly isEmpty = computed(() => !this.loadingState() && this.entries().length === 0);
+  readonly isEmpty = computed(() => !this.state.loading() && this.entries().length === 0);
 
   load(): void {
-    this.loadingState.set(true);
-    this.errorState.set(null);
     const horizon = this.horizonState();
 
-    this.api.board(horizon).subscribe({
-      next: (entries) => {
-        this.entriesState.set(entries);
-        this.loadingState.set(false);
-      },
-      error: (error: RegistryError) => {
-        this.errorState.set(error);
-        this.loadingState.set(false);
-      },
-    });
+    this.state.track(this.api.board(horizon), (entries) => this.entriesState.set(entries));
 
-    this.api.summary(horizon).subscribe({
-      next: (summary) => this.summaryState.set(summary),
-      error: () => this.summaryState.set(null),
-    });
+    this.state.beside(
+      this.api.summary(horizon),
+      (summary) => this.summaryState.set(summary),
+      () => this.summaryState.set(null),
+    );
   }
 
   setHorizon(days: number): void {

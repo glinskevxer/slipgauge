@@ -9,6 +9,7 @@ import {
   RoomTrace,
   worstFirst,
 } from '@core/models/environment.model';
+import { LoadingState } from '@core/loading-state';
 import { NotificationService } from '@core/notifications/notification.service';
 
 /**
@@ -31,8 +32,7 @@ export class EnvironmentStore {
   private readonly openedState = signal<ExcursionView | null>(null);
   private readonly affectedState = signal<AffectedWork | null>(null);
   private readonly traceState = signal<RoomTrace | null>(null);
-  private readonly loadingState = signal(false);
-  private readonly errorState = signal<RegistryError | null>(null);
+  private readonly state = new LoadingState();
 
   readonly limits = this.limitsState.asReadonly();
   readonly room = this.roomState.asReadonly();
@@ -40,8 +40,8 @@ export class EnvironmentStore {
   readonly opened = this.openedState.asReadonly();
   readonly affected = this.affectedState.asReadonly();
   readonly trace = this.traceState.asReadonly();
-  readonly loading = this.loadingState.asReadonly();
-  readonly error = this.errorState.asReadonly();
+  readonly loading = this.state.loading;
+  readonly error = this.state.error;
 
   readonly excursions = computed(() => worstFirst(this.excursionsState()));
 
@@ -56,7 +56,7 @@ export class EnvironmentStore {
   );
 
   readonly isEmpty = computed(
-    () => !this.loadingState() && this.excursionsState().length === 0,
+    () => !this.state.loading() && this.excursionsState().length === 0,
   );
 
   /** How many certificates the opened excursion put in question. */
@@ -67,24 +67,15 @@ export class EnvironmentStore {
   );
 
   load(): void {
-    this.loadingState.set(true);
-    this.errorState.set(null);
+    this.state.track(this.api.excursions(this.roomState(), this.unassessedOnlyState()), (rows) =>
+      this.excursionsState.set(rows),
+    );
 
-    this.api.excursions(this.roomState(), this.unassessedOnlyState()).subscribe({
-      next: (rows) => {
-        this.excursionsState.set(rows);
-        this.loadingState.set(false);
-      },
-      error: (error: RegistryError) => {
-        this.errorState.set(error);
-        this.loadingState.set(false);
-      },
-    });
-
-    this.api.limits(this.roomState() ?? undefined).subscribe({
-      next: (rows) => this.limitsState.set(rows),
-      error: () => this.limitsState.set([]),
-    });
+    this.state.beside(
+      this.api.limits(this.roomState() ?? undefined),
+      (rows) => this.limitsState.set(rows),
+      () => this.limitsState.set([]),
+    );
   }
 
   forRoom(code: string | null): void {

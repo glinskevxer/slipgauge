@@ -9,6 +9,7 @@ import {
   awaitingStage,
   closeable,
 } from '@core/models/nonconformity.model';
+import { LoadingState } from '@core/loading-state';
 import { NotificationService } from '@core/notifications/notification.service';
 
 /**
@@ -29,15 +30,14 @@ export class CapaStore {
   private readonly stageState = signal<CapaStage | null>(null);
   private readonly includeClosedState = signal(false);
   private readonly openedRefState = signal<string | null>(null);
-  private readonly loadingState = signal(false);
-  private readonly errorState = signal<RegistryError | null>(null);
+  private readonly state = new LoadingState();
 
   readonly records = this.recordsState.asReadonly();
   readonly summary = this.summaryState.asReadonly();
   readonly stage = this.stageState.asReadonly();
   readonly includeClosed = this.includeClosedState.asReadonly();
-  readonly loading = this.loadingState.asReadonly();
-  readonly error = this.errorState.asReadonly();
+  readonly loading = this.state.loading;
+  readonly error = this.state.error;
 
   readonly opened = computed(() => {
     const reference = this.openedRefState();
@@ -53,7 +53,7 @@ export class CapaStore {
     this.recordsState().filter((row) => row.open && row.owner === null),
   );
 
-  readonly isEmpty = computed(() => !this.loadingState() && this.recordsState().length === 0);
+  readonly isEmpty = computed(() => !this.state.loading() && this.recordsState().length === 0);
 
   /** The stage the opened record is waiting for, or null when it is finished. */
   readonly nextStage = computed(() => {
@@ -67,24 +67,15 @@ export class CapaStore {
   });
 
   load(): void {
-    this.loadingState.set(true);
-    this.errorState.set(null);
+    this.state.track(this.api.list(this.stageState(), this.includeClosedState()), (rows) =>
+      this.recordsState.set(rows),
+    );
 
-    this.api.list(this.stageState(), this.includeClosedState()).subscribe({
-      next: (rows) => {
-        this.recordsState.set(rows);
-        this.loadingState.set(false);
-      },
-      error: (error: RegistryError) => {
-        this.errorState.set(error);
-        this.loadingState.set(false);
-      },
-    });
-
-    this.api.summary().subscribe({
-      next: (summary) => this.summaryState.set(summary),
-      error: () => this.summaryState.set(null),
-    });
+    this.state.beside(
+      this.api.summary(),
+      (summary) => this.summaryState.set(summary),
+      () => this.summaryState.set(null),
+    );
   }
 
   filterStage(stage: CapaStage | null): void {
