@@ -69,3 +69,150 @@ export function exportFilename(what: string, on: string): string {
 export function contentDisposition(filename: string): string {
   return `attachment; filename="${filename}"`;
 }
+
+/**
+ * Reading a file back in.
+ *
+ * <p>The writing half of this module has been here since the first export. The
+ * reading half arrived with the bulk import, and it is here rather than in the
+ * import service because the two halves have to agree about quoting: a file
+ * this laboratory exported and then edited has to come back in, and a reader
+ * that did not understand the writer's own escaping would refuse the laboratory
+ * its own data.
+ */
+
+/** A parse that failed, with the line it failed on. */
+export class CsvFormatError extends Error {
+  constructor(
+    readonly line: number,
+    message: string,
+  ) {
+    super(`line ${line}: ${message}`);
+    this.name = 'CsvFormatError';
+  }
+}
+
+/**
+ * Splits one line into cells.
+ *
+ * <p>A quoted cell may contain commas, newlines and doubled quotes. Everything
+ * else is taken literally, including the apostrophe the writer puts in front of
+ * a cell Excel would otherwise evaluate: the apostrophe is stripped on the way
+ * back in so a round trip does not accumulate them.
+ */
+export function parseCsvLine(line: string, lineNumber = 1): string[] {
+  const cells: string[] = [];
+  let cell = '';
+  let quoted = false;
+  let index = 0;
+
+  while (index < line.length) {
+    const character = line[index];
+
+    if (quoted) {
+      if (character === '"') {
+        if (line[index + 1] === '"') {
+          cell += '"';
+          index += 2;
+          continue;
+        }
+        quoted = false;
+        index += 1;
+        continue;
+      }
+      cell += character;
+      index += 1;
+      continue;
+    }
+    if (character === '"') {
+      if (cell.length > 0) {
+        throw new CsvFormatError(lineNumber, 'a quote may only open a cell');
+      }
+      quoted = true;
+      index += 1;
+      continue;
+    }
+    if (character === ',') {
+      cells.push(unguard(cell));
+      cell = '';
+      index += 1;
+      continue;
+    }
+    cell += character;
+    index += 1;
+  }
+
+  if (quoted) {
+    throw new CsvFormatError(lineNumber, 'a quoted cell was never closed');
+  }
+  cells.push(unguard(cell));
+  return cells;
+}
+
+/** One row of a parsed file, keyed by header, with the line it came from. */
+export interface CsvRecord {
+  readonly line: number;
+  readonly cells: Readonly<Record<string, string>>;
+}
+
+export interface CsvParse {
+  readonly headers: readonly string[];
+  readonly records: readonly CsvRecord[];
+}
+
+/**
+ * A whole file, headers and all.
+ *
+ * <p>A row with the wrong number of cells is a format error rather than a
+ * silently short row: a spreadsheet that has had a column inserted is exactly
+ * the file somebody uploads by mistake, and taking it column by position would
+ * import the serial numbers into the model field.
+ */
+export function parseCsv(text: string): CsvParse {
+  const body = text.replace(/^﻿/, '');
+  const lines = body.split(/\r\n|\n|\r/).filter((line) => line.trim().length > 0);
+
+  if (lines.length === 0) {
+    return { headers: [], records: [] };
+  }
+
+  const headers = parseCsvLine(lines[0], 1).map((header) => header.trim());
+  const records: CsvRecord[] = [];
+
+  for (let index = 1; index < lines.length; index += 1) {
+    const lineNumber = index + 1;
+    const cells = parseCsvLine(lines[index], lineNumber);
+
+    if (cells.length !== headers.length) {
+      throw new CsvFormatError(
+        lineNumber,
+        `expected ${headers.length} cells but found ${cells.length}`,
+      );
+    }
+    const keyed: Record<string, string> = {};
+
+    headers.forEach((header, position) => {
+      keyed[header] = cells[position].trim();
+    });
+    records.push({ line: lineNumber, cells: keyed });
+  }
+  return { headers, records };
+}
+
+/** Headers the caller needs that the file does not have. */
+export function missingHeaders(
+  parse: CsvParse,
+  required: readonly string[],
+): readonly string[] {
+  const held = new Set(parse.headers);
+
+  return required.filter((header) => !held.has(header));
+}
+
+/** Drops the apostrophe the writer adds in front of a formula looking cell. */
+function unguard(cell: string): string {
+  if (cell.length > 1 && cell.startsWith("'")) {
+    return FORMULA_STARTERS.some((start) => cell.startsWith(`'${start}`)) ? cell.slice(1) : cell;
+  }
+  return cell;
+}
