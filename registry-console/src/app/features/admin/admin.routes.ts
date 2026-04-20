@@ -16,6 +16,13 @@ export const ADMIN_ROUTES: Routes = [
       import('./class-admin.component').then((m) => m.ClassAdminComponent),
   },
   {
+    path: 'import',
+    title: 'Import instruments',
+    canActivate: [roleGuard('ADMIN')],
+    loadComponent: () =>
+      import('../import/instrument-import.component').then((m) => m.InstrumentImportComponent),
+  },
+  {
     path: 'locations',
     title: 'Site tree',
     canActivate: [roleGuard('ADMIN')],

@@ -1,0 +1,116 @@
+<section class="import">
+  <header class="import__head">
+    <div>
+      <h1>Import instruments</h1>
+      <p class="import__sub">
+        A comma separated file, checked before anything is written. Nothing is added until
+        you say so.
+      </p>
+    </div>
+  </header>
+
+  <div class="picker">
+    <label class="picker__field">
+      Spreadsheet
+      <input type="file" name="file" accept=".csv,text/csv" (change)="choose($event)" />
+    </label>
+
+    @if (store.hasFile()) {
+      <p class="picker__what">
+        {{ store.fileName() }}, {{ store.rows() }} row(s)
+      </p>
+      <button type="button" (click)="store.clear()">Choose another</button>
+    }
+  </div>
+
+  @if (store.preview().length) {
+    <section class="peek" aria-labelledby="peek-heading">
+      <h2 id="peek-heading">The first few lines</h2>
+      <pre class="peek__lines">@for (line of store.preview(); track $index) {{{ line }}
+}</pre>
+    </section>
+  }
+
+  <div class="import__do">
+    <button
+      type="button"
+      class="primary"
+      [disabled]="!store.hasFile() || store.loading()"
+      (click)="store.check()"
+    >
+      Check the file
+    </button>
+    <button
+      type="button"
+      class="danger"
+      [disabled]="!store.canCommit() || store.loading()"
+      (click)="store.commit()"
+    >
+      Add them for real
+    </button>
+    @if (store.loading()) {
+      <span class="import__busy">Reading it.</span>
+    }
+  </div>
+
+  @if (store.error(); as failure) {
+    <p class="import__error" role="alert">{{ failure.message }}</p>
+  }
+
+  @if (store.report(); as report) {
+    <section class="report" aria-labelledby="report-heading">
+      <h2 id="report-heading">
+        {{ report.dryRun ? 'What would happen' : 'What happened' }}
+      </h2>
+      <p class="report__summary">{{ summaryInWords(report) }}</p>
+
+      <div class="tiles tiles--tight">
+        <sg-count-tile
+          [count]="report.created"
+          [label]="report.dryRun ? 'to add' : 'added'"
+          tone="ok"
+        />
+        <sg-count-tile [count]="report.duplicates" label="already held" />
+        <sg-count-tile
+          [count]="report.rejected"
+          label="could not be read"
+          [tone]="report.rejected > 0 ? 'bad' : 'neutral'"
+        />
+      </div>
+
+      <table class="report__lines">
+        <thead>
+          <tr>
+            <th scope="col">Line</th>
+            <th scope="col">Item</th>
+            <th scope="col">Outcome</th>
+            <th scope="col">Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (line of lines(); track line.line) {
+            <tr [class]="'row--' + verdictTone(line.verdict)">
+              <th scope="row">{{ line.line }}</th>
+              <td>{{ line.describes }}</td>
+              <td>
+                {{ label(line) }}
+                @if (line.assetTag) {
+                  <span class="report__tag">{{ line.assetTag }}</span>
+                }
+              </td>
+              <td>
+                @if (line.problems.length) {
+                  <ul class="report__problems">
+                    @for (problem of line.problems; track problem) {
+                      <li>{{ problem }}</li>
+                    }
+                  </ul>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+</section>

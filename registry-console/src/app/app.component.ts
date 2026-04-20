@@ -54,6 +54,7 @@ export class AppComponent {
 
   protected readonly adminNav = signal<readonly NavEntry[]>([
     { path: '/admin/classes', label: 'Admin', hint: 'Classes, locations and accounts' },
+    { path: '/admin/import', label: 'Import', hint: 'Bring a spreadsheet of instruments in' },
   ]);
 
   protected readonly labName = signal('Slipgauge Metrology');
