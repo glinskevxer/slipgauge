@@ -72,6 +72,14 @@ export interface TokenPair {
   readonly refreshToken: string;
   readonly expiresInSeconds: number;
   readonly tokenType: 'Bearer';
+  /**
+   * True when the password is past its rotation and has to be changed before
+   * anything else. The token is still issued: a console that cannot call the
+   * change route because it has no token cannot change the password either.
+   */
+  readonly mustChangePassword: boolean;
+  /** What to tell the person, or null when there is nothing to say. */
+  readonly passwordNotice: string | null;
 }
 
 export interface AccountView {

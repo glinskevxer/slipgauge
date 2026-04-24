@@ -4,7 +4,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { compareSync, hashSync } from 'bcryptjs';
 
-import { ConflictError, ErrorCode, NotFoundError, RegistryException } from '../common/errors';
+import {
+  ConflictError,
+  ErrorCode,
+  NotFoundError,
+  RegistryException,
+  RuleViolationError,
+} from '../common/errors';
 import { Clock } from '../config/clock';
 import { RegistryMetrics } from '../observability/registry-metrics.service';
 import type { SecurityConfig } from '../config/security.config';
@@ -19,6 +25,7 @@ import type {
   TokenPair,
   UpdateRolesDto,
 } from './dto/sign-in.dto';
+import { checkPassword, mustChange, rotationNotice } from './password-policy';
 import { Role } from './role';
 import { TokenService } from './token.service';
 
@@ -160,6 +167,24 @@ export class AuthenticationService {
       throw new SignInRefused();
     }
 
+    const problems = checkPassword(request.newPassword, user.username);
+
+    if (problems.length > 0) {
+      await this.audit.denied(
+        username,
+        'auth.changePassword',
+        'user',
+        String(user.id),
+        `refused by the password policy: ${problems.map((p) => p.rule).join(', ')}`,
+      );
+      throw new RuleViolationError(
+        problems.map((problem) => problem.detail).join('; '),
+      ).with('rules', problems.map((problem) => problem.rule));
+    }
+    if (compareSync(request.newPassword, user.passwordHash)) {
+      throw new RuleViolationError('the new password has to be different from the old one');
+    }
+
     user.changePassword(hashSync(request.newPassword, this.rounds()), this.clock.now());
     await this.users.save(user);
     await this.audit.allowed(username, 'auth.changePassword', 'user', String(user.id));
@@ -288,11 +313,15 @@ export class AuthenticationService {
   }
 
   private pairFor(user: AppUser): TokenPair {
+    const now = this.clock.now();
+
     return {
       accessToken: this.tokens.issueAccess(user),
       refreshToken: this.tokens.issueRefresh(user),
       expiresInSeconds: this.tokens.accessTtlSeconds(),
       tokenType: 'Bearer',
+      mustChangePassword: mustChange(user.passwordSetAt, now),
+      passwordNotice: rotationNotice(user.passwordSetAt, now),
     };
   }
 

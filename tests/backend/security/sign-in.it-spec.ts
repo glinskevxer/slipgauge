@@ -234,11 +234,11 @@ describe('signing in and what a token then lets you do', () => {
     await raw()
       .post('/api/auth/password')
       .set('Authorization', `Bearer ${signedIn.body.accessToken}`)
-      .send({ currentPassword: PASSWORD, newPassword: 'another-long-password' })
+      .send({ currentPassword: PASSWORD, newPassword: 'Trawlerbank ledger 7' })
       .expect(204);
 
     await signIn('r.okonjo').expect(401);
-    await signIn('r.okonjo', 'another-long-password').expect(200);
+    await signIn('r.okonjo', 'Trawlerbank ledger 7').expect(200);
   });
 
   it('refuses a new password that is too short to be worth having', async () => {
@@ -264,5 +264,128 @@ describe('signing in and what a token then lets you do', () => {
     expect(me.body.username).toBe('r.okonjo');
     expect(me.body.roles).toEqual([Role.METROLOGIST]);
     expect(me.body.locked).toBe(false);
+  });
+});
+
+/**
+ * The password policy, at the edge rather than in the unit test. What matters
+ * here is that a refusal comes back as something a console can show and that
+ * the sign in reply says when a password is running out.
+ */
+describe('the password policy at the edge', () => {
+  let harness: TestApp;
+  const PASSWORD = 'harbour ledger 7';
+
+  beforeAll(async () => {
+    harness = await createTestApp({ now: '2025-11-20T09:00:00Z' });
+  });
+
+  afterAll(async () => {
+    await harness.close();
+  });
+
+  beforeEach(async () => {
+    await harness.reset();
+
+    // Only the account this suite makes. The bootstrap administrator is
+    // reference data the migration ships, and the accounts suite reads it.
+    await harness.dataSource.query(
+      `delete from app_user_role where user_id in
+         (select id from app_user where username = 'r.okonjo')`,
+    );
+    await harness.dataSource.query(`delete from app_user where username = 'r.okonjo'`);
+  });
+
+  async function account(setAt = '2025-06-01T09:00:00Z') {
+    const admin = harness.api(harness.tokenFor(Role.ADMIN));
+
+    await admin
+      .post('/api/accounts')
+      .send({
+        username: 'r.okonjo',
+        displayName: 'Rachel Okonjo',
+        email: 'r.okonjo@slipgauge.internal',
+        password: PASSWORD,
+        roles: ['TECHNICIAN'],
+      })
+      .expect(201);
+
+    await harness.dataSource.query('update app_user set password_set_at = $1 where username = $2', [
+      setAt,
+      'r.okonjo',
+    ]);
+  }
+
+  function signIn(password = PASSWORD) {
+    return request(harness.app.getHttpServer())
+      .post('/api/auth/sign-in')
+      .send({ username: 'r.okonjo', password });
+  }
+
+  it('says nothing about the password when it has months left', async () => {
+    await account();
+
+    const signedIn = await signIn().expect(200);
+    expect(signedIn.body.mustChangePassword).toBe(false);
+    expect(signedIn.body.passwordNotice).toBeNull();
+  });
+
+  it('warns when it is nearly up', async () => {
+    await account('2024-12-05T09:00:00Z');
+
+    const signedIn = await signIn().expect(200);
+    expect(signedIn.body.mustChangePassword).toBe(false);
+    expect(signedIn.body.passwordNotice).toContain('expires in');
+  });
+
+  it('still issues a token when it has expired, so it can be changed', async () => {
+    await account('2024-01-06T09:00:00Z');
+
+    const signedIn = await signIn().expect(200);
+    expect(signedIn.body.mustChangePassword).toBe(true);
+    expect(signedIn.body.accessToken).toBeTruthy();
+    expect(signedIn.body.passwordNotice).toContain('has expired');
+  });
+
+  it('refuses a new password the policy will not have, and says which rules', async () => {
+    await account();
+    const signedIn = await signIn().expect(200);
+
+    const refused = await request(harness.app.getHttpServer())
+      .post('/api/auth/password')
+      .set('Authorization', `Bearer ${signedIn.body.accessToken}`)
+      .send({ currentPassword: PASSWORD, newPassword: 'r.okonjo2025' })
+      .expect(422);
+
+    expect(refused.body.detail).toContain('cannot contain the username');
+    expect(refused.body.context.rules).toContain('username');
+  });
+
+  it('refuses a change back to the same password', async () => {
+    await account();
+    const signedIn = await signIn().expect(200);
+
+    const refused = await request(harness.app.getHttpServer())
+      .post('/api/auth/password')
+      .set('Authorization', `Bearer ${signedIn.body.accessToken}`)
+      .send({ currentPassword: PASSWORD, newPassword: PASSWORD })
+      .expect(422);
+
+    expect(refused.body.detail).toContain('different from the old one');
+  });
+
+  it('clears the expiry once the password is changed', async () => {
+    await account('2024-01-06T09:00:00Z');
+    const signedIn = await signIn().expect(200);
+    expect(signedIn.body.mustChangePassword).toBe(true);
+
+    await request(harness.app.getHttpServer())
+      .post('/api/auth/password')
+      .set('Authorization', `Bearer ${signedIn.body.accessToken}`)
+      .send({ currentPassword: PASSWORD, newPassword: 'Trawlerbank ledger 7' })
+      .expect(204);
+
+    const again = await signIn('Trawlerbank ledger 7').expect(200);
+    expect(again.body.mustChangePassword).toBe(false);
   });
 });
