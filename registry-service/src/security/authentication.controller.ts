@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Ip, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Ip, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { AuthenticationService } from './authentication.service';
@@ -26,6 +26,13 @@ export class AuthenticationController {
   @HttpCode(200)
   refresh(@Body() request: RefreshDto): Promise<TokenPair> {
     return this.auth.refresh(request.refreshToken);
+  }
+
+  /** Ends this session. The access token stays valid until it expires. */
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('sign-out')
+  async signOut(@Body() request: RefreshDto, @CurrentUser() user: Principal): Promise<void> {
+    await this.auth.signOut(request.refreshToken, user.username);
   }
 
   @Post('password')

@@ -15,6 +15,11 @@ export interface RegistryClaims {
   readonly roles: string[];
   /** Access or refresh, checked on the way back in. */
   readonly typ: 'access' | 'refresh';
+  /**
+   * The session this token belongs to. Only a refresh token carries one: the
+   * access token lives minutes and is not worth a database read per request.
+   */
+  readonly sid?: string;
 }
 
 /** A claims set that has been read back and checked. */
@@ -23,6 +28,8 @@ export interface Principal {
   readonly username: string;
   readonly displayName: string;
   readonly roles: Role[];
+  /** Present on a refresh token, absent on an access token. */
+  readonly sessionId?: string;
 }
 
 @Injectable()
@@ -41,12 +48,16 @@ export class TokenService {
     return this.sign(user, 'access', this.security().accessTokenTtlSeconds);
   }
 
-  issueRefresh(user: AppUser): string {
-    return this.sign(user, 'refresh', this.security().refreshTokenTtlSeconds);
+  issueRefresh(user: AppUser, sessionId: string): string {
+    return this.sign(user, 'refresh', this.security().refreshTokenTtlSeconds, sessionId);
   }
 
   accessTtlSeconds(): number {
     return this.security().accessTokenTtlSeconds;
+  }
+
+  refreshTtlSeconds(): number {
+    return this.security().refreshTokenTtlSeconds;
   }
 
   /**
@@ -71,10 +82,16 @@ export class TokenService {
       username: claims.sub,
       displayName: claims.name,
       roles: (claims.roles ?? []).filter(isRole),
+      sessionId: claims.sid,
     };
   }
 
-  private sign(user: AppUser, typ: 'access' | 'refresh', ttlSeconds: number): string {
+  private sign(
+    user: AppUser,
+    typ: 'access' | 'refresh',
+    ttlSeconds: number,
+    sessionId?: string,
+  ): string {
     const security = this.security();
     const claims: RegistryClaims = {
       sub: user.username,
@@ -82,6 +99,7 @@ export class TokenService {
       name: user.displayName,
       roles: user.roles,
       typ,
+      ...(sessionId ? { sid: sessionId } : {}),
     };
 
     return this.jwt.sign(claims, {

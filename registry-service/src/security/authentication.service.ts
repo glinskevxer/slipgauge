@@ -15,12 +15,14 @@ import { Clock } from '../config/clock';
 import { RegistryMetrics } from '../observability/registry-metrics.service';
 import type { SecurityConfig } from '../config/security.config';
 import { AppUser } from './app-user.entity';
+import { UserSession, userSession } from './user-session.entity';
 import { AttemptLimiter } from './attempt-limiter.service';
 import { AuditTrail } from './audit-trail.service';
 import type {
   AccountView,
   ChangePasswordDto,
   CreateUserDto,
+  SessionView,
   SignInDto,
   TokenPair,
   UpdateRolesDto,
@@ -28,6 +30,7 @@ import type {
 import { checkPassword, mustChange, rotationNotice } from './password-policy';
 import { Role } from './role';
 import { TokenService } from './token.service';
+import type { Principal } from './token.service';
 
 /** Refused sign in, worded so it says nothing about which half was wrong. */
 class SignInRefused extends RegistryException {
@@ -65,6 +68,7 @@ export class AuthenticationService {
 
   constructor(
     @InjectRepository(AppUser) private readonly users: Repository<AppUser>,
+    @InjectRepository(UserSession) private readonly sessions: Repository<UserSession>,
     private readonly dataSource: DataSource,
     private readonly tokens: TokenService,
     private readonly audit: AuditTrail,
@@ -138,25 +142,124 @@ export class AuthenticationService {
     await this.audit.allowed(user.username, 'auth.signIn', 'user', String(user.id));
     this.metrics.signIn('allowed');
 
-    return this.pairFor(user);
+    const session = await this.sessions.save(
+      userSession(user, this.tokens.refreshTtlSeconds(), from, now),
+    );
+
+    return this.pairFor(user, session);
   }
 
-  /** Trades a refresh token for a new pair, re-reading the roles as it goes. */
+  /**
+   * Trades a refresh token for a new pair, re-reading the roles as it goes.
+   *
+   * <p>The session row is what decides, not the signature. A token that is
+   * perfectly valid and belongs to a revoked session is refused, which is the
+   * whole reason the row exists.
+   */
   async refresh(refreshToken: string): Promise<TokenPair> {
-    let username: string;
+    let principal: Principal;
 
     try {
-      username = this.tokens.verify(refreshToken, 'refresh').username;
+      principal = this.tokens.verify(refreshToken, 'refresh');
     } catch {
       throw new SignInRefused();
     }
 
-    const user = await this.byUsername(username);
+    const now = this.clock.now();
+    const user = await this.byUsername(principal.username);
 
-    if (!user || !user.canSignIn(this.clock.now())) {
+    if (!user || !user.canSignIn(now)) {
       throw new SignInRefused();
     }
-    return this.pairFor(user);
+
+    // A token minted before sessions existed carries no id. Those are refused
+    // rather than waved through: the whole point is that every live token can
+    // be taken away, and one that cannot be is the one worth having.
+    const session = principal.sessionId
+      ? await this.sessions.findOne({ where: { id: principal.sessionId } })
+      : null;
+
+    if (!session || !session.isLiveAt(now) || session.username !== user.username) {
+      await this.audit.denied(
+        principal.username,
+        'auth.refresh',
+        'session',
+        principal.sessionId ?? null,
+        session ? `session ${session.standing(now)}` : 'no such session',
+      );
+      throw new SignInRefused();
+    }
+
+    session.touch(now);
+    await this.sessions.save(session);
+    return this.pairFor(user, session);
+  }
+
+  /** Ends one session, which is what signing out means. */
+  async signOut(refreshToken: string, by: string): Promise<void> {
+    let principal: Principal;
+
+    try {
+      principal = this.tokens.verify(refreshToken, 'refresh');
+    } catch {
+      return;
+    }
+    if (!principal.sessionId) {
+      return;
+    }
+    const session = await this.sessions.findOne({ where: { id: principal.sessionId } });
+
+    if (!session) {
+      return;
+    }
+    session.revoke(by, 'signed out', this.clock.now());
+    await this.sessions.save(session);
+    await this.audit.allowed(by, 'auth.signOut', 'session', session.id);
+  }
+
+  /**
+   * Ends every session one person holds. Called when an account is disabled,
+   * when its password changes, and by an administrator with a reason.
+   */
+  async revokeSessionsFor(username: string, by: string, reason: string): Promise<number> {
+    const now = this.clock.now();
+    const held = await this.sessions.find({ where: { username } });
+    let ended = 0;
+
+    for (const session of held) {
+      if (!session.isLiveAt(now)) {
+        continue;
+      }
+      session.revoke(by, reason, now);
+      await this.sessions.save(session);
+      ended += 1;
+    }
+    if (ended > 0) {
+      this.log.warn(`${ended} session(s) for ${username} revoked by ${by}: ${reason}`);
+      await this.audit.allowed(by, 'auth.revokeSessions', 'user', username);
+    }
+    return ended;
+  }
+
+  /** Every session one person has had, newest first. */
+  async sessionsFor(username: string): Promise<SessionView[]> {
+    const now = this.clock.now();
+    const held = await this.sessions.find({
+      where: { username },
+      order: { startedAt: 'DESC' },
+    });
+
+    return held.map((session) => ({
+      id: session.id,
+      username: session.username,
+      startedAt: session.startedAt.toISOString(),
+      lastUsedAt: session.lastUsedAt.toISOString(),
+      expiresAt: session.expiresAt.toISOString(),
+      signedInFrom: session.signedInFrom,
+      standing: session.standing(now),
+      revokedBy: session.revokedBy,
+      revokeReason: session.revokeReason,
+    }));
   }
 
   async changePassword(username: string, request: ChangePasswordDto): Promise<void> {
@@ -187,6 +290,10 @@ export class AuthenticationService {
 
     user.changePassword(hashSync(request.newPassword, this.rounds()), this.clock.now());
     await this.users.save(user);
+
+    // Everything signed in on the old password goes. A password changed because
+    // it may have been seen is a password whose sessions have to end with it.
+    await this.revokeSessionsFor(user.username, username, 'password changed');
     await this.audit.allowed(username, 'auth.changePassword', 'user', String(user.id));
   }
 
@@ -255,6 +362,12 @@ export class AuthenticationService {
       user.lockedUntil = null;
     }
     await this.users.save(user);
+
+    // Disabling an account that still holds a live refresh token disables
+    // nothing for as long as that token lasts, which was days.
+    if (!enabled) {
+      await this.revokeSessionsFor(user.username, actor, 'account disabled');
+    }
     await this.audit.allowed(actor, enabled ? 'user.enable' : 'user.disable', 'user', String(userId));
     return this.toView(user);
   }
@@ -312,12 +425,12 @@ export class AuthenticationService {
     });
   }
 
-  private pairFor(user: AppUser): TokenPair {
+  private pairFor(user: AppUser, session: UserSession): TokenPair {
     const now = this.clock.now();
 
     return {
       accessToken: this.tokens.issueAccess(user),
-      refreshToken: this.tokens.issueRefresh(user),
+      refreshToken: this.tokens.issueRefresh(user, session.id),
       expiresInSeconds: this.tokens.accessTtlSeconds(),
       tokenType: 'Bearer',
       mustChangePassword: mustChange(user.passwordSetAt, now),

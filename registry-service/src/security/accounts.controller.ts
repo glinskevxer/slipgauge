@@ -15,7 +15,7 @@ import { AuditTrail } from './audit-trail.service';
 import { AuthenticationService } from './authentication.service';
 import type { AuditEvent } from './audit-event.entity';
 import { CurrentUser } from './current-user.decorator';
-import type { AccountView } from './dto/sign-in.dto';
+import type { AccountView, SessionView } from './dto/sign-in.dto';
 import { CreateUserDto, UpdateRolesDto } from './dto/sign-in.dto';
 import { Role } from './role';
 import { RequireRoles } from './roles.decorator';
@@ -53,6 +53,26 @@ export class AccountsController {
     @Body() request: UpdateRolesDto,
   ): Promise<AccountView> {
     return this.auth.setRoles(principal.username, id, request);
+  }
+
+  /** Every sign in one person has had, live and dead. */
+  @Get(':username/sessions')
+  sessions(@Param('username') username: string): Promise<SessionView[]> {
+    return this.auth.sessionsFor(username);
+  }
+
+  /**
+   * Ends every session one person holds. What an administrator reaches for
+   * when a laptop goes missing, and the only thing that takes a live refresh
+   * token away before it expires.
+   */
+  @Post(':username/session-revocation')
+  async revokeSessions(
+    @Param('username') username: string,
+    @Query('reason') reason: string,
+    @CurrentUser() actor: Principal,
+  ): Promise<{ revoked: number }> {
+    return { revoked: await this.auth.revokeSessionsFor(username, actor.username, reason) };
   }
 
   @Post(':id/enablement')

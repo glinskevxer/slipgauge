@@ -92,3 +92,16 @@ export interface AccountView {
   readonly roles: readonly Role[];
   readonly lastLoginAt: string | null;
 }
+
+/** One sign in, as the account screen reads it. */
+export interface SessionView {
+  readonly id: string;
+  readonly username: string;
+  readonly startedAt: string;
+  readonly lastUsedAt: string;
+  readonly expiresAt: string;
+  readonly signedInFrom: string | null;
+  readonly standing: 'live' | 'revoked' | 'expired';
+  readonly revokedBy: string | null;
+  readonly revokeReason: string | null;
+}

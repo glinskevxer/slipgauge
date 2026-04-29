@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AppUser } from './app-user.entity';
+import { UserSession } from './user-session.entity';
 import { AuditEvent } from './audit-event.entity';
 import { AccountsController, AuditController } from './accounts.controller';
 import { AttemptLimiter } from './attempt-limiter.service';
@@ -19,7 +20,7 @@ import { TokenService } from './token.service';
  * which is greppable; closing one takes nothing, which is not.
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([AppUser, AuditEvent]), JwtModule.register({})],
+  imports: [TypeOrmModule.forFeature([AppUser, AuditEvent, UserSession]), JwtModule.register({})],
   controllers: [AuthenticationController, AccountsController, AuditController],
   providers: [
     AuthenticationService,

@@ -18,6 +18,7 @@ import { Nonconformity1736000000019 } from './1736000000019-Nonconformity';
 import { AccreditationScope1736000000020 } from './1736000000020-AccreditationScope';
 import { CertificateStatements1736000000021 } from './1736000000021-CertificateStatements';
 import { Proficiency1736000000022 } from './1736000000022-Proficiency';
+import { Sessions1736000000023 } from './1736000000023-Sessions';
 import { ProfileClassLinks1736000000004 } from './1736000000004-ProfileClassLinks';
 import { ToleranceProfiles1736000000003 } from './1736000000003-ToleranceProfiles';
 
@@ -51,4 +52,5 @@ export const MIGRATIONS = [
   AccreditationScope1736000000020,
   CertificateStatements1736000000021,
   Proficiency1736000000022,
+  Sessions1736000000023,
 ];
