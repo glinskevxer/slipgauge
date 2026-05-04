@@ -1,5 +1,5 @@
 import { MiddlewareConsumer, Global, Module, NestModule } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ImpactAssessment } from '../impact/impact-assessment.entity';
@@ -7,6 +7,7 @@ import { Instrument } from '../instrument/instrument.entity';
 import { CorrelationIdMiddleware } from './correlation-id.middleware';
 import { HealthController } from './health.controller';
 import { MetricsController } from './metrics.controller';
+import { RateLimitGuard } from './rate-limit.guard';
 import { RegistryMetrics } from './registry-metrics.service';
 import { RequestTimingInterceptor } from './request-timing.interceptor';
 
@@ -19,7 +20,14 @@ import { RequestTimingInterceptor } from './request-timing.interceptor';
 @Module({
   imports: [TypeOrmModule.forFeature([Instrument, ImpactAssessment])],
   controllers: [HealthController, MetricsController],
-  providers: [RegistryMetrics, { provide: APP_INTERCEPTOR, useClass: RequestTimingInterceptor }],
+  providers: [
+    RegistryMetrics,
+    { provide: APP_INTERCEPTOR, useClass: RequestTimingInterceptor },
+    // After the authentication guard, so the limit counts a person rather
+    // than the one address the whole laboratory shares.
+    RateLimitGuard,
+    { provide: APP_GUARD, useExisting: RateLimitGuard },
+  ],
   exports: [RegistryMetrics],
 })
 export class ObservabilityModule implements NestModule {

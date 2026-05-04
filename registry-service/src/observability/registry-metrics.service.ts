@@ -32,6 +32,11 @@ export class RegistryMetrics {
     this.declare('registry_interval_moves_total', 'counter', 'Interval decisions that moved');
     this.declare('registry_impact_raised_total', 'counter', 'Impact assessments raised');
     this.declare('registry_sign_in_total', 'counter', 'Sign in attempts by outcome');
+    this.declare(
+      'registry_rate_limited_total',
+      'counter',
+      'Requests turned away for going too fast',
+    );
     this.declare('registry_overdue_instruments', 'gauge', 'Instruments past their due date');
     this.declare('registry_open_assessments', 'gauge', 'Impact assessments not yet closed');
     this.declare('registry_request_seconds', 'histogram', 'Request latency by route');
@@ -61,6 +66,11 @@ export class RegistryMetrics {
 
   signIn(outcome: 'allowed' | 'denied'): void {
     this.increment('registry_sign_in_total', { outcome });
+  }
+
+  /** A caller turned away for going too fast, labelled by what it was asking for. */
+  rateLimited(cost: string): void {
+    this.increment('registry_rate_limited_total', { cost });
   }
 
   overdueInstruments(count: number): void {

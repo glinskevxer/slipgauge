@@ -5,6 +5,7 @@ import { DataSource } from 'typeorm';
 
 import { AppModule } from '@registry/app.module';
 import { ProblemDetailFilter } from '@registry/common/problem-detail.filter';
+import { RateLimitGuard } from '@registry/observability/rate-limit.guard';
 import { Clock, FixedClock } from '@registry/config/clock';
 import { AppUser } from '@registry/security/app-user.entity';
 import { Role } from '@registry/security/role';
@@ -135,6 +136,11 @@ export async function createTestApp(options: TestAppOptions = {}): Promise<TestA
       for (const table of [...MUTABLE_TABLES].reverse()) {
         await dataSource.query(`truncate table ${table} restart identity cascade`);
       }
+
+      // The rate limiter counts in memory against a clock the suites pin, so
+      // nothing ages out between tests. Without this a suite that files eight
+      // logger uploads is turned away by its own earlier ones.
+      app.get(RateLimitGuard).reset();
     },
   };
 }

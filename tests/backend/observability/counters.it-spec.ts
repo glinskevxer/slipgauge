@@ -176,3 +176,105 @@ describe('the counters the laboratory actually watches', () => {
     expect(scraped).not.toContain('R Okonjo');
   });
 });
+
+/**
+ * The limiter at the edge. What matters is that it fires on the expensive
+ * routes, says how long to wait, and never fires on a read.
+ */
+describe('turning a caller away for going too fast', () => {
+  let harness: TestApp;
+  let bench: ReturnType<TestApp['api']>;
+  let quality: ReturnType<TestApp['api']>;
+
+  beforeAll(async () => {
+    harness = await createTestApp({ now: '2025-11-20T09:00:00Z' });
+    bench = harness.api(harness.tokenFor(Role.TECHNICIAN));
+    quality = harness.api(harness.tokenFor(Role.QUALITY_MANAGER));
+  });
+
+  afterAll(async () => {
+    await harness.close();
+  });
+
+  beforeEach(async () => {
+    await harness.reset();
+    await quality
+      .put('/api/environment/limits')
+      .send({ locationCode: 'HARLOW-DIM', temperatureMin: 19, temperatureMax: 21 })
+      .expect(200);
+  });
+
+  function upload(hour: number) {
+    return bench.post('/api/environment/readings').send({
+      locationCode: 'HARLOW-DIM',
+      loggerRef: `LOG-${hour}`,
+      readings: [
+        {
+          takenAt: new Date(Date.UTC(2025, 10, 20, hour, 0, 0)).toISOString(),
+          temperature: 20,
+        },
+      ],
+    });
+  }
+
+  it('lets a normal burst of sweeping calls through', async () => {
+    for (let hour = 1; hour <= 6; hour += 1) {
+      await upload(hour).expect(201);
+    }
+  });
+
+  it('turns the next one away and says how long to wait', async () => {
+    for (let hour = 1; hour <= 6; hour += 1) {
+      await upload(hour).expect(201);
+    }
+
+    const refused = await upload(7).expect(429);
+
+    expect(refused.body.detail).toContain('too many requests');
+    expect(refused.body.context.cost).toBe('SWEEPING');
+    expect(refused.body.context.retryAfterSeconds).toBeGreaterThan(0);
+  });
+
+  it('leaves the reads alone however many there are', async () => {
+    for (let hour = 1; hour <= 6; hour += 1) {
+      await upload(hour).expect(201);
+    }
+    await upload(7).expect(429);
+
+    for (let index = 0; index < 20; index += 1) {
+      await bench.get('/api/environment/excursions').expect(200);
+    }
+  });
+
+  it('leaves the cheap writes alone when the expensive ones are blocked', async () => {
+    for (let hour = 1; hour <= 6; hour += 1) {
+      await upload(hour).expect(201);
+    }
+    await upload(7).expect(429);
+
+    await bench
+      .post('/api/nonconformities')
+      .send({
+        source: 'OTHER',
+        severity: 'LOW',
+        title: 'a small thing',
+        detail: 'still able to raise one',
+      })
+      .expect(201);
+  });
+
+  it('counts the refusal so somebody can see it happening', async () => {
+    for (let hour = 1; hour <= 6; hour += 1) {
+      await upload(hour).expect(201);
+    }
+    await upload(7).expect(429);
+
+    // The counter is a process wide total, so this reads that it moved rather
+    // than that it is one: the earlier tests in this block were turned away too.
+    const scrape = await request(harness.app.getHttpServer()).get('/metrics').expect(200);
+    const counted = /registry_rate_limited_total\{cost="SWEEPING"\} (\d+)/.exec(scrape.text);
+
+    expect(counted).not.toBeNull();
+    expect(Number(counted?.[1])).toBeGreaterThan(0);
+  });
+});
