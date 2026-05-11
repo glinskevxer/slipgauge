@@ -12,6 +12,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import type { Page } from '../common/page';
 import { AuditTrail } from './audit-trail.service';
+import type { AuditSweepResult } from './audit-trail.service';
 import { AuthenticationService } from './authentication.service';
 import type { AuditEvent } from './audit-event.entity';
 import { CurrentUser } from './current-user.decorator';
@@ -31,7 +32,10 @@ import type { Principal } from './token.service';
 @ApiBearerAuth('registry-token')
 @Controller('accounts')
 export class AccountsController {
-  constructor(private readonly auth: AuthenticationService) {}
+  constructor(
+    private readonly auth: AuthenticationService,
+    private readonly audit: AuditTrail,
+  ) {}
 
   @Get()
   list(): Promise<AccountView[]> {
@@ -73,6 +77,19 @@ export class AccountsController {
     @CurrentUser() actor: Principal,
   ): Promise<{ revoked: number }> {
     return { revoked: await this.auth.revokeSessionsFor(username, actor.username, reason) };
+  }
+
+  /**
+   * Trims the trail to what the retention rules allow, and says what went.
+   * Run by hand rather than on a schedule: it is a records decision and the
+   * quality manager wants to see the numbers before it happens again.
+   */
+  @Post('audit/sweep')
+  async sweepAudit(@CurrentUser() actor: Principal): Promise<AuditSweepResult> {
+    const result = await this.audit.sweep();
+
+    await this.audit.allowed(actor.username, 'audit.sweep', 'audit', String(result.total));
+    return result;
   }
 
   @Post(':id/enablement')

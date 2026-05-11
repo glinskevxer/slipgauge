@@ -171,3 +171,128 @@ describe('administering accounts', () => {
     await admin().get('/api/audit').query({ sort: 'detail' }).expect(400);
   });
 });
+
+/**
+ * Trimming the trail. The rules are unit tested; what matters here is that the
+ * sweep applies each of them to the rows they cover and nothing else.
+ */
+describe('trimming the audit trail', () => {
+  let harness: TestApp;
+  let admin: ReturnType<TestApp['api']>;
+
+  beforeAll(async () => {
+    harness = await createTestApp({ now: '2026-01-06T09:00:00Z' });
+    admin = harness.api(harness.tokenFor(Role.ADMIN));
+  });
+
+  afterAll(async () => {
+    await harness.close();
+  });
+
+  beforeEach(async () => {
+    await harness.reset();
+  });
+
+  /**
+   * Counted back from the clock the app is pinned to, not from the database's
+   * own now(). The two are years apart in a suite with a fixed clock, and a row
+   * inserted against the wrong one is never old enough to sweep.
+   */
+  async function line(action: string, outcome: string, daysAgo: number): Promise<void> {
+    const at = new Date(Date.parse('2026-01-06T09:00:00Z') - daysAgo * 86_400_000);
+
+    await harness.dataSource.query(
+      `insert into audit_event (occurred_at, actor, action, subject, subject_id, outcome, detail)
+       values ($1, 'somebody', $2, 'user', null, $3, null)`,
+      [at.toISOString(), action, outcome],
+    );
+  }
+
+  async function held(): Promise<{ action: string; outcome: string }[]> {
+    return harness.dataSource.query('select action, outcome from audit_event order by id');
+  }
+
+  it('drops a refused sign in older than a month', async () => {
+    await line('auth.signIn', 'DENIED', 40);
+    await line('auth.signIn', 'DENIED', 5);
+
+    const swept = await admin.post('/api/accounts/audit/sweep').expect(201);
+
+    expect(swept.body.total).toBeGreaterThanOrEqual(1);
+    const left = await held();
+    expect(left.filter((row) => row.action === 'auth.signIn')).toHaveLength(1);
+  });
+
+  it('keeps a successful sign in of the same age', async () => {
+    await line('auth.signIn', 'ALLOWED', 40);
+    await line('auth.signIn', 'DENIED', 40);
+
+    await admin.post('/api/accounts/audit/sweep').expect(201);
+
+    const left = await held();
+    expect(left.filter((row) => row.action === 'auth.signIn')).toEqual([
+      { action: 'auth.signIn', outcome: 'ALLOWED' },
+    ]);
+  });
+
+  it('drops a refresh older than the session could have lived', async () => {
+    await line('auth.refresh', 'ALLOWED', 120);
+    await line('auth.refresh', 'ALLOWED', 30);
+
+    await admin.post('/api/accounts/audit/sweep').expect(201);
+
+    const left = await held();
+    expect(left.filter((row) => row.action === 'auth.refresh')).toHaveLength(1);
+  });
+
+  it('keeps a withdrawal from five years ago', async () => {
+    await line('certificate.withdraw', 'ALLOWED', 5 * 365);
+
+    await admin.post('/api/accounts/audit/sweep').expect(201);
+
+    const left = await held();
+    expect(left.some((row) => row.action === 'certificate.withdraw')).toBe(true);
+  });
+
+  it('drops one from ten years ago', async () => {
+    await line('certificate.withdraw', 'ALLOWED', 10 * 365);
+
+    await admin.post('/api/accounts/audit/sweep').expect(201);
+
+    const left = await held();
+    expect(left.some((row) => row.action === 'certificate.withdraw')).toBe(false);
+  });
+
+  it('says which rule dropped what', async () => {
+    await line('auth.signIn', 'DENIED', 40);
+
+    const swept = await admin.post('/api/accounts/audit/sweep').expect(201);
+
+    expect(swept.body.dropped[0].rule).toContain('noise after a month');
+    expect(swept.body.dropped[0].rows).toBeGreaterThanOrEqual(1);
+  });
+
+  it('writes its own line, so a sweep is itself auditable', async () => {
+    await line('auth.signIn', 'DENIED', 40);
+    await admin.post('/api/accounts/audit/sweep').expect(201);
+
+    const left = await held();
+    expect(left.some((row) => row.action === 'audit.sweep')).toBe(true);
+  });
+
+  it('does nothing at all to a trail that is all inside its rules', async () => {
+    await line('auth.signIn', 'DENIED', 5);
+    await line('certificate.withdraw', 'ALLOWED', 100);
+
+    const swept = await admin.post('/api/accounts/audit/sweep').expect(201);
+    expect(swept.body.total).toBe(0);
+    expect(swept.body.dropped).toHaveLength(0);
+  });
+
+  it('will not let the bench sweep the trail', async () => {
+    await harness
+      .api(harness.tokenFor(Role.TECHNICIAN))
+      .post('/api/accounts/audit/sweep')
+      .expect(403);
+  });
+});
