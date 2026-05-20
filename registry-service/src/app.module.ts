@@ -14,6 +14,7 @@ import { NonconformityModule } from './nonconformity/nonconformity.module';
 import { ObservabilityModule } from './observability/observability.module';
 import { ProficiencyModule } from './proficiency/proficiency.module';
 import { RecallModule } from './recall/recall.module';
+import { ReviewModule } from './review/review.module';
 import { ScopeModule } from './scope/scope.module';
 import { SecurityModule } from './security/security.module';
 import { TraceabilityModule } from './traceability/traceability.module';
@@ -40,6 +41,7 @@ import { UsageModule } from './usage/usage.module';
     EnvironmentModule,
     NonconformityModule,
     ProficiencyModule,
+    ReviewModule,
     RecallModule,
     UsageModule,
     ImpactModule,
