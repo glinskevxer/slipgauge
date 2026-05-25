@@ -1,0 +1,75 @@
+<section class="pack">
+  <header class="pack__head">
+    <div>
+      <h1>Management review</h1>
+      <p class="pack__sub">
+        Every input clause 8.9.2 asks for, read out of the register.
+      </p>
+    </div>
+
+    <div class="pack__controls">
+      <label class="pack__field">
+        From
+        <input type="date" name="from" [value]="store.period().from" #from />
+      </label>
+      <label class="pack__field">
+        To
+        <input type="date" name="to" [value]="store.period().to" #to />
+      </label>
+      <button type="button" (click)="apply(from.value, to.value)">
+        Rebuild
+      </button>
+      <button type="button" (click)="print()">Print</button>
+    </div>
+  </header>
+
+  @if (store.error(); as failure) {
+    <p class="pack__error" role="alert">{{ failure.message }}</p>
+  }
+
+  @if (store.loading()) {
+    <p class="pack__loading">Reading the register.</p>
+  } @else {
+    @if (store.pack(); as pack) {
+      <p class="pack__period">
+        {{ periodInWords(pack.period) }}, prepared
+        {{ pack.preparedOn | date: "d MMM y" }}
+      </p>
+
+      <section class="points" aria-labelledby="points-heading">
+        <h2 id="points-heading">What the register raised</h2>
+        @if (store.quiet()) {
+          <p class="points__quiet">{{ pack.talkingPoints[0] }}</p>
+        } @else {
+          <ol class="points__list">
+            @for (point of pack.talkingPoints; track point) {
+              <li>{{ point }}</li>
+            }
+          </ol>
+        }
+      </section>
+
+      @for (section of store.sections(); track section.heading) {
+        <section class="figures" [attr.aria-label]="section.heading">
+          <h2>
+            {{ section.heading }}
+            <span class="figures__clause">{{ section.clause }}</span>
+          </h2>
+          <dl class="figures__grid">
+            @for (figure of section.figures; track figure.label) {
+              <div [class]="'figure figure--' + figure.tone">
+                <dt>{{ figure.label }}</dt>
+                <dd>{{ figure.value }}</dd>
+              </div>
+            }
+          </dl>
+        </section>
+      }
+    } @else {
+      <sg-empty-state
+        headline="No pack yet"
+        detail="Choose a period and rebuild it."
+      />
+    }
+  }
+</section>

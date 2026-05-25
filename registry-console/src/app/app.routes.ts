@@ -66,6 +66,13 @@ export const APP_ROUTES: Routes = [
       import('./features/environment/room-log.component').then((m) => m.RoomLogComponent),
   },
   {
+    path: 'management-review',
+    title: 'Management review',
+    canActivate: [roleGuard('QUALITY_MANAGER', 'ADMIN')],
+    loadComponent: () =>
+      import('./features/review/review-pack.component').then((m) => m.ReviewPackComponent),
+  },
+  {
     path: 'competence',
     title: 'Who is authorised',
     canActivate: [roleGuard('QUALITY_MANAGER', 'AUDITOR', 'ADMIN')],

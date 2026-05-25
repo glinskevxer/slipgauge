@@ -1,0 +1,117 @@
+.pack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sg-space-4);
+}
+
+.pack__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sg-space-5);
+}
+
+.pack__sub,
+.pack__period,
+.pack__loading {
+  margin: var(--sg-space-1) 0 0;
+  color: var(--sg-ink-muted);
+  font-size: var(--sg-text-sm);
+}
+
+.pack__error {
+  padding: var(--sg-space-3);
+  background: var(--sg-fail-soft);
+  border: 1px solid var(--sg-fail);
+  border-radius: var(--sg-radius-md);
+  color: var(--sg-fail);
+}
+
+.pack__controls {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sg-space-2);
+}
+
+.pack__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sg-space-1);
+  font-size: var(--sg-text-sm);
+  color: var(--sg-ink-muted);
+}
+
+.points,
+.figures {
+  padding: var(--sg-space-4);
+  background: var(--sg-surface);
+  border: 1px solid var(--sg-border);
+  border-radius: var(--sg-radius-md);
+}
+
+.points h2,
+.figures h2 {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sg-space-2);
+  margin: 0 0 var(--sg-space-3);
+  font-size: var(--sg-text-md);
+}
+
+.figures__clause {
+  color: var(--sg-ink-muted);
+  font-size: var(--sg-text-xs);
+  font-weight: 400;
+}
+
+.points__list {
+  margin: 0;
+  padding-left: var(--sg-space-4);
+}
+
+.points__list li {
+  margin-bottom: var(--sg-space-1);
+}
+
+.points__quiet {
+  margin: 0;
+  color: var(--sg-ink-muted);
+}
+
+.figures__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--sg-space-3);
+  margin: 0;
+}
+
+.figure dt {
+  color: var(--sg-ink-muted);
+  font-size: var(--sg-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.figure dd {
+  margin: var(--sg-space-1) 0 0;
+  font-size: var(--sg-text-lg);
+  font-variant-numeric: tabular-nums;
+}
+
+.figure--bad dd {
+  color: var(--sg-fail);
+}
+
+// The pack is printed and taken into the meeting, so the controls and the
+// application shell come off and the sections stay together on a page.
+@media print {
+  .pack__controls {
+    display: none;
+  }
+
+  .points,
+  .figures {
+    border-color: #000;
+    break-inside: avoid;
+  }
+}
