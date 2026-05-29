@@ -5,19 +5,10 @@ import { Role } from '@registry/security/role';
 
 import { CompetenceFixtures } from '../support/competence-fixtures';
 import { RegisterFixtures } from '../support/fixtures';
+import { OUTSIDE_STANDARD } from '../support/sheet-fixtures';
 import { TestApp, createTestApp } from '../support/test-app';
 
 const TODAY = '2026-01-06T09:00:00Z';
-
-const OUTSIDE_STANDARD = {
-  externalRef: 'NPL 2024/117',
-  externalLab: 'National Physical Laboratory',
-  externalCertificateNumber: 'NPL-2024-117',
-  externalAccreditation: 'UKAS 0001',
-  externalValidFrom: '2024-11-01',
-  externalValidTo: '2026-10-31',
-  role: 'REFERENCE',
-};
 
 describe('the management review pack', () => {
   let harness: TestApp;

@@ -3,6 +3,7 @@ import { StandardRole } from '@registry/traceability';
 import { Role } from '@registry/security/role';
 import { RegisterFixtures } from '../support/fixtures';
 import { CompetenceFixtures } from '../support/competence-fixtures';
+import { OUTSIDE_STANDARD } from '../support/sheet-fixtures';
 import { TestApp, createTestApp } from '../support/test-app';
 
 describe('filing a calibration sheet', () => {
@@ -28,18 +29,7 @@ describe('filing a calibration sheet', () => {
 
   const http = () => harness.api(harness.tokenFor(Role.ADMIN));
 
-  /** Every sheet needs a reference standard, so the default one is out here. */
-  const OUTSIDE_STANDARD = {
-    externalRef: 'NPL 2024/117',
-    externalLab: 'National Physical Laboratory',
-    externalCertificateNumber: 'NPL-2024-117',
-    externalAccreditation: 'UKAS 0001',
-    externalValidFrom: '2024-11-01',
-    externalValidTo: '2025-10-31',
-    role: StandardRole.REFERENCE,
-  };
-
-  function sheet(overrides: Record<string, unknown> = {}) {
+    function sheet(overrides: Record<string, unknown> = {}) {
     return {
       certificateNumber: 'CAL-2025-0100',
       assetTag: 'SG-200001',

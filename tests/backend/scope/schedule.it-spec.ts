@@ -5,6 +5,11 @@ import { Role } from '@registry/security/role';
 
 import { CompetenceFixtures } from '../support/competence-fixtures';
 import { RegisterFixtures } from '../support/fixtures';
+import {
+  OUTSIDE_STANDARD,
+  ReferenceDataSnapshot,
+  scopeSnapshot,
+} from '../support/sheet-fixtures';
 import { TestApp, createTestApp } from '../support/test-app';
 
 const TODAY = '2025-11-20T09:00:00Z';
@@ -26,7 +31,7 @@ describe('the schedule of accreditation', () => {
    * wipe. This one has to start from an empty schedule to say anything useful,
    * so it takes a copy first and puts it back at the end.
    */
-  let seeded: Record<string, unknown>[] = [];
+  let seeded: ReferenceDataSnapshot;
 
   beforeAll(async () => {
     harness = await createTestApp({ now: TODAY });
@@ -34,41 +39,18 @@ describe('the schedule of accreditation', () => {
     bench = harness.api(harness.tokenFor(Role.TECHNICIAN));
     reviewer = harness.api(harness.tokenFor(Role.METROLOGIST));
     register = new RegisterFixtures(harness.dataSource);
-    seeded = await harness.dataSource.query('select * from accreditation_scope');
+    seeded = scopeSnapshot(harness.dataSource);
+    await seeded.take();
   });
 
   afterAll(async () => {
-    await harness.dataSource.query('delete from accreditation_scope');
-
-    for (const row of seeded) {
-      await harness.dataSource.query(
-        `insert into accreditation_scope
-           (id, schedule_ref, discipline, class_id, measurand, unit, range_low, range_high,
-            cmc_absolute, cmc_ppm, valid_from, valid_to, note)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-        [
-          row['id'],
-          row['schedule_ref'],
-          row['discipline'],
-          row['class_id'],
-          row['measurand'],
-          row['unit'],
-          row['range_low'],
-          row['range_high'],
-          row['cmc_absolute'],
-          row['cmc_ppm'],
-          row['valid_from'],
-          row['valid_to'],
-          row['note'],
-        ],
-      );
-    }
+    await seeded.restore();
     await harness.close();
   });
 
   beforeEach(async () => {
     await harness.reset();
-    await harness.dataSource.query('delete from accreditation_scope');
+    await seeded.clear();
     await new CompetenceFixtures(harness.dataSource).grant(
       'r.okonjo',
       Discipline.DIMENSIONAL,
@@ -270,57 +252,24 @@ describe('what a certificate states', () => {
   let harness: TestApp;
   let quality: ReturnType<TestApp['api']>;
   let register: RegisterFixtures;
-  let seeded: Record<string, unknown>[] = [];
+  let seeded: ReferenceDataSnapshot;
 
-  const OUTSIDE_STANDARD = {
-    externalRef: 'NPL 2024/117',
-    externalLab: 'National Physical Laboratory',
-    externalCertificateNumber: 'NPL-2024-117',
-    externalAccreditation: 'UKAS 0001',
-    externalValidFrom: '2024-11-01',
-    externalValidTo: '2026-10-31',
-    role: 'REFERENCE',
-  };
-
-  beforeAll(async () => {
+    beforeAll(async () => {
     harness = await createTestApp({ now: TODAY });
     quality = harness.api(harness.tokenFor(Role.QUALITY_MANAGER, Role.METROLOGIST));
     register = new RegisterFixtures(harness.dataSource);
-    seeded = await harness.dataSource.query('select * from accreditation_scope');
+    seeded = scopeSnapshot(harness.dataSource);
+    await seeded.take();
   });
 
   afterAll(async () => {
-    await harness.dataSource.query('delete from accreditation_scope');
-
-    for (const row of seeded) {
-      await harness.dataSource.query(
-        `insert into accreditation_scope
-           (id, schedule_ref, discipline, class_id, measurand, unit, range_low, range_high,
-            cmc_absolute, cmc_ppm, valid_from, valid_to, note)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-        [
-          row['id'],
-          row['schedule_ref'],
-          row['discipline'],
-          row['class_id'],
-          row['measurand'],
-          row['unit'],
-          row['range_low'],
-          row['range_high'],
-          row['cmc_absolute'],
-          row['cmc_ppm'],
-          row['valid_from'],
-          row['valid_to'],
-          row['note'],
-        ],
-      );
-    }
+    await seeded.restore();
     await harness.close();
   });
 
   beforeEach(async () => {
     await harness.reset();
-    await harness.dataSource.query('delete from accreditation_scope');
+    await seeded.clear();
     await new CompetenceFixtures(harness.dataSource).grant(
       'r.okonjo',
       Discipline.DIMENSIONAL,
@@ -425,7 +374,7 @@ describe('what a certificate states', () => {
     await scopeTo(25);
     const filed = await quality.post('/api/certificates').send(sheet([20])).expect(201);
 
-    await harness.dataSource.query('delete from accreditation_scope');
+    await seeded.clear();
 
     const read = await quality.get(`/api/certificates/${filed.body.id}`).expect(200);
     expect(read.body).toMatchObject({ accredited: true, scopeRef: 'UKAS-0001/12' });

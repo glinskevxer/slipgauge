@@ -5,20 +5,10 @@ import { Role } from '@registry/security/role';
 
 import { CompetenceFixtures } from '../support/competence-fixtures';
 import { RegisterFixtures } from '../support/fixtures';
+import { OUTSIDE_STANDARD } from '../support/sheet-fixtures';
 import { TestApp, createTestApp } from '../support/test-app';
 
 const TODAY = '2025-11-20T09:00:00Z';
-
-/** A traceable outside standard, so the chain check is never what refuses. */
-const OUTSIDE_STANDARD = {
-  externalRef: 'NPL 2024/117',
-  externalLab: 'National Physical Laboratory',
-  externalCertificateNumber: 'NPL-2024-117',
-  externalAccreditation: 'UKAS 0001',
-  externalValidFrom: '2024-11-01',
-  externalValidTo: '2026-10-31',
-  role: 'REFERENCE',
-};
 
 /**
  * The rule the authorisation register exists for: a sheet is refused when the
