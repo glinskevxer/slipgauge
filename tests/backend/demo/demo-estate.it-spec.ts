@@ -3,6 +3,7 @@ import { DemoEstateService } from '@registry/demo/demo-estate.service';
 import { Instrument } from '@registry/instrument/instrument.entity';
 import { IntervalDecision } from '@registry/interval';
 import { AppUser } from '@registry/security/app-user.entity';
+import { Role } from '@registry/security/role';
 import { CertificateStandard } from '@registry/traceability';
 import { UsageRecord } from '@registry/usage/usage-record.entity';
 import { TestApp, createTestApp } from '../support/test-app';
@@ -162,5 +163,99 @@ describe('the demo laboratory', () => {
     expect(errors).toHaveLength(3);
     expect(errors[1]).toBeGreaterThan(errors[0] as number);
     expect(errors[2]).toBeGreaterThan(errors[1] as number);
+  });
+});
+
+/**
+ * The parts of the demo that arrived with the later subsystems. A demo that
+ * loads a laboratory with no schedule, no room log and nothing on the job desk
+ * shows three screens that look broken.
+ */
+describe('what else the demo loads', () => {
+  let harness: TestApp;
+  let http: ReturnType<TestApp['api']>;
+
+  beforeAll(async () => {
+    harness = await createTestApp({ now: '2025-12-01T09:00:00Z' });
+    http = harness.api(harness.tokenFor(Role.QUALITY_MANAGER, Role.METROLOGIST));
+    await harness.reset();
+    await harness.app.get(DemoEstateService).load();
+  });
+
+  afterAll(async () => {
+    await harness.close();
+  });
+
+  it('writes a schedule of accreditation', async () => {
+    const schedule = await http.get('/api/scope').expect(200);
+
+    expect(schedule.body.length).toBeGreaterThanOrEqual(3);
+    expect(schedule.body.map((line: { scheduleRef: string }) => line.scheduleRef)).toContain(
+      'UKAS-0001/01',
+    );
+  });
+
+  it('holds the working rooms to a band', async () => {
+    const limits = await http.get('/api/environment/limits').expect(200);
+
+    expect(limits.body.map((row: { locationCode: string }) => row.locationCode).sort()).toEqual([
+      'CREWE-TOOL',
+      'HARLOW-DIM',
+    ]);
+  });
+
+  it('leaves a week of readings with one afternoon that went wrong', async () => {
+    const excursions = await http.get('/api/environment/excursions').expect(200);
+
+    expect(excursions.body.length).toBeGreaterThanOrEqual(1);
+    expect(excursions.body[0].locationCode).toBe('HARLOW-DIM');
+    expect(excursions.body[0].kind).toBe('TEMPERATURE_HIGH');
+  });
+
+  it('raises a nonconformance off that afternoon, like the real thing would', async () => {
+    const raised = await http.get('/api/nonconformities').expect(200);
+
+    expect(raised.body.some((row: { source: string }) => row.source === 'EXCURSION')).toBe(true);
+  });
+
+  it('opens three customers with a job each, left at received', async () => {
+    const customers = await http.get('/api/customers').expect(200);
+    expect(customers.body).toHaveLength(3);
+
+    const jobs = await http.get('/api/jobs').expect(200);
+    expect(jobs.body.totalItems).toBe(3);
+    expect(jobs.body.items.every((row: { state: string }) => row.state === 'RECEIVED')).toBe(true);
+  });
+
+  it('books two lines onto each job so contract review has something to read', async () => {
+    const jobs = await http.get('/api/jobs').expect(200);
+
+    expect(jobs.body.items.every((row: { itemCount: number }) => row.itemCount === 2)).toBe(true);
+  });
+
+  it('leaves the demo certificates carrying the mark', async () => {
+    const history = await http.get('/api/instruments/SG-000001/certificates').expect(200);
+
+    expect(history.body.length).toBeGreaterThan(0);
+    expect(history.body.some((row: { accredited: boolean }) => row.accredited)).toBe(true);
+  });
+
+  it('builds a management review pack with something in it', async () => {
+    const pack = await http
+      .get('/api/management-review?from=2023-01-01&to=2025-12-31')
+      .expect(200);
+
+    expect(pack.body.resources.instrumentsInService).toBeGreaterThan(0);
+    expect(pack.body.workload.certificatesIssued).toBeGreaterThan(0);
+    expect(pack.body.talkingPoints.length).toBeGreaterThan(0);
+  });
+
+  it('loads the same laboratory twice rather than a second one', async () => {
+    const before = await http.get('/api/customers').expect(200);
+
+    await harness.app.get(DemoEstateService).load();
+
+    const after = await http.get('/api/customers').expect(200);
+    expect(after.body).toHaveLength(before.body.length);
   });
 });

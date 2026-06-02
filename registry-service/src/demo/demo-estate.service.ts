@@ -8,8 +8,17 @@ import { CompetenceLevel } from '../competence/competence-level';
 import { Competence, competence } from '../competence/competence.entity';
 import { CalibrationService } from '../calibration/calibration.service';
 import type { RecordCalibrationDto, StandardInput } from '../calibration/dto/record-calibration.dto';
+import { EnvironmentLimitRecord, EnvironmentReading } from '../environment/environment.entities';
+import { EnvironmentService } from '../environment/environment.service';
 import { Instrument } from '../instrument/instrument.entity';
+import { InstrumentClass } from '../instrument/instrument-class.entity';
 import { Discipline } from '../instrument/instrument.enums';
+import { StorageLocation } from '../instrument/storage-location.entity';
+import { Customer, customer } from '../jobs/customer.entity';
+import { jobItem } from '../jobs/job-item.entity';
+import { Job, job } from '../jobs/job.entity';
+import { JobService } from '../jobs/job.enums';
+import { AccreditationScope, scopeLine } from '../scope/accreditation-scope.entity';
 import { InstrumentService } from '../instrument/instrument.service';
 import { AppUser } from '../security/app-user.entity';
 import { Role } from '../security/role';
@@ -88,6 +97,69 @@ const BENCH: readonly Kit[] = [
 
 const CUSTOMERS = ['Fenland Turbines', 'Brightside Forge', 'Kestrel Aerospace'];
 
+/** The date the demo schedule of accreditation runs from. */
+const SCOPE_FROM = '2022-01-10';
+
+/** A week of logger readings, with the chiller failing on the fourth day. */
+const LOGGER_FROM = '2025-11-17';
+
+/** When the demo customer jobs arrived. */
+const JOBS_FROM = '2025-11-24';
+
+interface ScopeLine {
+  readonly scheduleRef: string;
+  readonly classCode: string;
+  readonly measurand: string;
+  readonly unit: string;
+  readonly low: number;
+  readonly high: number;
+  readonly cmc: number | null;
+  readonly ppm: number | null;
+}
+
+const DEMO_SCOPE: readonly ScopeLine[] = [
+  {
+    scheduleRef: 'UKAS-0001/01',
+    classCode: 'MIC-EXT',
+    measurand: 'External micrometer',
+    unit: 'mm',
+    low: 0,
+    high: 100,
+    cmc: 0.0005,
+    ppm: 20,
+  },
+  {
+    scheduleRef: 'UKAS-0001/02',
+    classCode: 'GB-SET',
+    measurand: 'Gauge block length',
+    unit: 'mm',
+    low: 0.5,
+    high: 100,
+    cmc: 0.00005,
+    ppm: 5,
+  },
+  {
+    scheduleRef: 'UKAS-0001/03',
+    classCode: 'CAL-DIG',
+    measurand: 'Digital caliper',
+    unit: 'mm',
+    low: 0,
+    high: 150,
+    cmc: 0.005,
+    ppm: null,
+  },
+];
+
+const DEMO_ROOMS: readonly { code: string; min: number; max: number; soak: number }[] = [
+  { code: 'HARLOW-DIM', min: 19, max: 21, soak: 12 },
+  { code: 'CREWE-TOOL', min: 18, max: 22, soak: 4 },
+];
+
+/** A domain shaped name for a demo email address. */
+function slug(name: string): string {
+  return name.toLowerCase().replace(/[^a-z]+/g, '');
+}
+
 /**
  * Fills an empty database with a laboratory that looks like one.
  *
@@ -115,7 +187,17 @@ export class DemoEstateService {
     @InjectRepository(UsageRecord) private readonly usage: Repository<UsageRecord>,
     @InjectRepository(AppUser) private readonly users: Repository<AppUser>,
     @InjectRepository(Competence) private readonly competence: Repository<Competence>,
+    @InjectRepository(InstrumentClass) private readonly classes: Repository<InstrumentClass>,
+    @InjectRepository(StorageLocation) private readonly locations: Repository<StorageLocation>,
+    @InjectRepository(AccreditationScope) private readonly scope: Repository<AccreditationScope>,
+    @InjectRepository(EnvironmentLimitRecord)
+    private readonly limits: Repository<EnvironmentLimitRecord>,
+    @InjectRepository(EnvironmentReading)
+    private readonly readings: Repository<EnvironmentReading>,
+    @InjectRepository(Customer) private readonly customers: Repository<Customer>,
+    @InjectRepository(Job) private readonly jobs: Repository<Job>,
     private readonly instruments: InstrumentService,
+    private readonly environment: EnvironmentService,
     private readonly calibrations: CalibrationService,
     private readonly dataSource: DataSource,
   ) {}
@@ -138,6 +220,9 @@ export class DemoEstateService {
 
     await this.calibrateEverything(standard, bench);
     await this.logSomeWork(bench);
+    await this.writeTheSchedule();
+    await this.openTheRooms();
+    await this.bookSomeCustomerWork();
 
     const loaded = await this.register.count();
 
@@ -209,6 +294,146 @@ export class DemoEstateService {
           ).running(AUTHORISED_FROM, AUTHORISED_TO),
         );
       }
+    }
+  }
+
+  /**
+   * Writes a schedule of accreditation for the disciplines the demo works in.
+   *
+   * <p>Without it every demo certificate goes out unaccredited, which is a
+   * true answer to a question nobody asked and makes the console look broken.
+   */
+  private async writeTheSchedule(): Promise<void> {
+    for (const line of DEMO_SCOPE) {
+      const type = await this.classes.findOne({ where: { code: line.classCode } });
+
+      if (!type) {
+        continue;
+      }
+      const held = await this.scope.count({ where: { scheduleRef: line.scheduleRef } });
+
+      if (held > 0) {
+        continue;
+      }
+      const record = scopeLine(
+        line.scheduleRef,
+        type.discipline,
+        line.measurand,
+        line.unit,
+        SCOPE_FROM,
+      )
+        .over(line.low, line.high)
+        .claiming(line.cmc, line.ppm);
+
+      record.instrumentClass = type;
+      await this.scope.save(record);
+    }
+  }
+
+  /**
+   * Holds the two working rooms to a band and drops a week of logger readings
+   * into one of them, with one afternoon where the chiller gave up.
+   *
+   * <p>The excursion is deliberate. A demo where nothing ever went wrong shows
+   * none of the machinery that exists because things do.
+   */
+  private async openTheRooms(): Promise<void> {
+    for (const room of DEMO_ROOMS) {
+      const location = await this.locations.findOne({ where: { code: room.code } });
+
+      if (!location) {
+        continue;
+      }
+      const held = await this.limits.count({ where: { location: { id: location.id } } });
+
+      if (held === 0) {
+        const limit = new EnvironmentLimitRecord();
+
+        limit.location = location;
+        limit.discipline = null;
+        limit.band(room.min, room.max).humidity(35, 65);
+        limit.driftPerHour = null;
+        limit.soakHours = room.soak;
+        limit.methodReference = 'SLP-WI-002';
+        await this.limits.save(limit);
+      }
+    }
+
+    const dimensional = await this.locations.findOne({ where: { code: 'HARLOW-DIM' } });
+
+    if (!dimensional || (await this.readings.count()) > 0) {
+      return;
+    }
+
+    for (let hour = 0; hour < 7 * 24; hour += 1) {
+      const at = new Date(Date.parse(`${LOGGER_FROM}T00:00:00Z`) + hour * 3_600_000);
+      const inTheGap = hour >= 76 && hour <= 81;
+      const reading = new EnvironmentReading();
+
+      reading.location = dimensional;
+      reading.takenAt = at;
+      reading.temperature = inTheGap
+        ? 22.4 + this.random.nextInt(4) / 10
+        : 20 + (this.random.nextInt(9) - 4) / 10;
+      reading.humidity = 48 + this.random.nextInt(5);
+      reading.loggerRef = 'TINYTAG-4471';
+      reading.source = 'LOGGER';
+      await this.readings.save(reading);
+    }
+
+    // Written straight to the table for speed, so the sweep has to be asked for
+    // by hand. Without it the demo has a week of readings and no excursion,
+    // which is the one thing the room log screen exists to show.
+    await this.environment.sweep(
+      dimensional,
+      new Date(`${LOGGER_FROM}T00:00:00Z`),
+      new Date(Date.parse(`${LOGGER_FROM}T00:00:00Z`) + 8 * 86_400_000),
+    );
+  }
+
+  /**
+   * Books three customers in with a job each, so the desk has something on it.
+   * The jobs are left at received: contract review is a decision and a demo
+   * that had already made it would hide the screen it is made on.
+   */
+  private async bookSomeCustomerWork(): Promise<void> {
+    if ((await this.customers.count()) > 0) {
+      return;
+    }
+
+    for (const [index, name] of CUSTOMERS.entries()) {
+      const account = customer(`C-${1000 + index * 7}`, name)
+        .contactedBy('Quality office', `quality@${slug(name)}.example`, '01279 000000')
+        .quoting(10 + index * 5);
+
+      account.accreditedRequired = index === 0;
+
+      const saved = await this.customers.save(account);
+      const receivedOn = plusDays(JOBS_FROM, index * 3);
+      const booked = job(`J-${receivedOn.slice(0, 4)}-000${index + 1}`, saved, receivedOn, 'h.whitcombe')
+        .against(`PO-${4400 + index}`)
+        .withInstructions(index === 2 ? 'Customer asked for the sheet by email.' : null);
+
+      booked.promisedOn = plusDays(receivedOn, 14);
+      booked.items = [
+        Object.assign(
+          jobItem(1, JobService.CALIBRATION, 'external micrometer 0 to 25 mm').identifiedAs(
+            'Mitutoyo',
+            '103-137',
+            `SN-DEMO-${index}1`,
+          ),
+          { rangeHigh: 25, toleranceStated: true },
+        ),
+        Object.assign(
+          jobItem(2, JobService.CALIBRATION, 'digital caliper 0 to 150 mm').identifiedAs(
+            'Mahr',
+            '16 EWR',
+            `SN-DEMO-${index}2`,
+          ),
+          { rangeHigh: 150, toleranceStated: true },
+        ),
+      ];
+      await this.jobs.save(booked);
     }
   }
 
