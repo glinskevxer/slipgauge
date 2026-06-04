@@ -34,7 +34,17 @@ services:
       # somebody will deploy with a shipped key.
       REGISTRY_JWT_SECRET: ${REGISTRY_JWT_SECRET:?a signing key is required}
       REGISTRY_ALLOWED_ORIGINS: ${REGISTRY_ALLOWED_ORIGINS:-http://localhost:4200}
-      LAB_ACCREDITATION_REF: ${LAB_ACCREDITATION_REF:-UNSET}
+      LAB_ACCREDITATION_REF: ${LAB_ACCREDITATION_REF:?the schedule reference is printed on certificates}
+      LAB_NAME: ${LAB_NAME:-Slipgauge Metrology}
+      # The interval procedure's four numbers. Left at the defaults the class
+      # table carries unless the laboratory has written down otherwise.
+      REGISTRY_INTERVAL_TARGET_PASSES: ${REGISTRY_INTERVAL_TARGET_PASSES:-3}
+      REGISTRY_INTERVAL_EXTENSION_PERCENT: ${REGISTRY_INTERVAL_EXTENSION_PERCENT:-25}
+      REGISTRY_INTERVAL_REDUCTION_PERCENT: ${REGISTRY_INTERVAL_REDUCTION_PERCENT:-50}
+      REGISTRY_INTERVAL_DRIFT_LIMIT: ${REGISTRY_INTERVAL_DRIFT_LIMIT:-0.6}
+      # Never on in a real deployment. The compose file is used for a demo as
+      # often as for anything else, so it is a variable rather than a comment.
+      REGISTRY_DEMO_ESTATE: ${REGISTRY_DEMO_ESTATE:-false}
     ports:
       - '8080:8080'
     healthcheck:
@@ -48,6 +58,12 @@ services:
       retries: 12
       start_period: 20s
 
+    # The service holds its rate limiter and its sign in counter in memory, so
+    # a second replica would double every allowance. One replica is deliberate
+    # and the note is in rate-limit.ts.
+    deploy:
+      replicas: 1
+
   registry-console:
     build:
       context: .
@@ -57,6 +73,29 @@ services:
         condition: service_healthy
     ports:
       - '4200:8080'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:8080/index.html >/dev/null || exit 1']
+      interval: 10s
+      timeout: 3s
+      retries: 6
+
+  # Reads the room loggers off the laboratory network and posts them at the
+  # service. Not started by default: it needs the loggers to be reachable, and
+  # a demo on a laptop cannot see them.
+  logger-poller:
+    profiles: ['loggers']
+    build:
+      context: .
+      dockerfile: registry-service/Dockerfile
+    depends_on:
+      registry-service:
+        condition: service_healthy
+    command: ['node', 'dist/tools/logger-poll.js']
+    environment:
+      REGISTRY_API: http://registry-service:8080/api
+      REGISTRY_LOGGER_HOST: ${REGISTRY_LOGGER_HOST:-}
+      REGISTRY_LOGGER_TOKEN: ${REGISTRY_LOGGER_TOKEN:-}
+    restart: unless-stopped
 
 volumes:
   pgdata:
