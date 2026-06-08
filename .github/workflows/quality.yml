@@ -1,0 +1,82 @@
+name: quality gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  hygiene:
+    name: what a review would notice first
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Every test in the repository lives under /tests, deliberately. A spec
+      # that appears beside the code it tests is the start of a second tree.
+      - name: no tests outside the tests tree
+        run: |
+          stray=$(find registry-service/src registry-console/src \
+            \( -name '*.spec.ts' -o -name '*.test.ts' \) -print)
+          if [ -n "$stray" ]; then
+            echo "these belong under /tests:" >&2
+            echo "$stray" >&2
+            exit 1
+          fi
+
+      # A signing key or a password that ships in the repository is the one
+      # finding that stops an assessment on the spot.
+      - name: no obvious secret in the tree
+        run: |
+          if grep -rInE "(BEGIN [A-Z ]*PRIVATE KEY|AKIA[0-9A-Z]{16}|xox[baprs]-)" \
+              --exclude-dir=node_modules --exclude-dir=.git . ; then
+            echo "that looks like a credential" >&2
+            exit 1
+          fi
+
+      # The service refuses to boot without a signing key on purpose. A default
+      # creeping back in is how one gets deployed.
+      - name: the signing key still has no default
+        run: |
+          if grep -nE "jwtSecret[^\n]*\?\?" registry-service/src/config/security.config.ts; then
+            echo "the signing key has grown a default" >&2
+            exit 1
+          fi
+
+      - name: every migration is registered
+        run: |
+          on_disk=$(ls registry-service/src/database/migrations/*-*.ts | wc -l)
+          listed=$(grep -c '^  [A-Z].*[0-9],$' registry-service/src/database/migrations/index.ts)
+          test "$on_disk" -eq "$listed"
+
+  formatting:
+    name: the console formats the way it says it does
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.18.1'
+          cache: npm
+          cache-dependency-path: registry-console/package-lock.json
+
+      - name: install
+        working-directory: registry-console
+        run: npm ci
+
+      - name: lint with no warnings allowed
+        working-directory: registry-console
+        run: npx eslint . --max-warnings 0

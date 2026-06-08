@@ -20,17 +20,25 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    name: build and test
+  unit:
+    name: typecheck and unit tests on node ${{ matrix.node }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # The version the images run, and the next long term one. A repository
+        # that only ever builds on the version it ships finds out about the
+        # next one on the day it has to move.
+        node: ['20.18.1', '22.13.1']
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20.18.1'
+          node-version: ${{ matrix.node }}
           cache: npm
           cache-dependency-path: registry-service/package-lock.json
 
@@ -46,6 +54,24 @@ jobs:
         working-directory: registry-service
         run: npm test -- --ci
 
+  integration:
+    name: integration tests and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.18.1'
+          cache: npm
+          cache-dependency-path: registry-service/package-lock.json
+
+      - name: install
+        working-directory: registry-service
+        run: npm ci
+
       # The integration tests unpack the PostgreSQL binaries that ship with
       # embedded-postgres rather than asking for a service container, so
       # nothing else has to be running for them.
@@ -56,6 +82,16 @@ jobs:
       - name: build
         working-directory: registry-service
         run: npm run build
+
+      - name: check the migrations are all registered
+        run: |
+          on_disk=$(ls registry-service/src/database/migrations/*-*.ts | wc -l)
+          listed=$(grep -c '^  [A-Z].*[0-9],$' registry-service/src/database/migrations/index.ts)
+          echo "$on_disk migration file(s), $listed listed"
+          if [ "$on_disk" -ne "$listed" ]; then
+            echo "a migration is on disk and not in the list, or the other way round" >&2
+            exit 1
+          fi
 
       - name: upload the built service
         uses: actions/upload-artifact@v4

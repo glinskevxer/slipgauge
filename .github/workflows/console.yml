@@ -54,6 +54,19 @@ jobs:
         working-directory: registry-console
         run: npm run build
 
+      # A bundle that has quietly doubled is a bundle somebody has to load over
+      # the laboratory's own network, and nobody notices until it is four
+      # megabytes. The number is generous; it is a tripwire, not a budget.
+      - name: check the bundle has not run away
+        working-directory: registry-console
+        run: |
+          bytes=$(du -sb dist/registry-console/browser | cut -f1)
+          echo "the browser bundle is $bytes bytes"
+          if [ "$bytes" -gt 6000000 ]; then
+            echo "the bundle is over six megabytes, work out what went in" >&2
+            exit 1
+          fi
+
       - name: upload coverage
         if: always()
         uses: actions/upload-artifact@v4
