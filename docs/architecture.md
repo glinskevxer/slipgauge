@@ -82,3 +82,99 @@ worth not having at all.
 - The console is tested with Jest, and driven end to end by Playwright against a
   stubbed service, because those tests are about the console's own behaviour.
 - The stack coming up for real is proved separately, in the images workflow.
+
+## What arrived after the first release
+
+The register started as the laboratory's own equipment and the certificates
+against it. Everything below was added because an assessment asked for it, and
+each one is written up here in the order it went in.
+
+### Customer work (clause 7.1)
+
+A **job** is a batch of items that arrived together and go back together. Its
+lines are not register rows: an item becomes an instrument when the job is
+accepted at contract review and not before, because an item declined at review
+would otherwise sit in the register for ever with no owner and no history.
+
+Contract review answers four questions in order, and the order matters. The
+capability answer is judged against the requirements, the method against the
+capability, and the decision rule only means anything once the method is fixed.
+The checker decides what the laboratory can do; the reviewer decides only
+whether the customer has agreed to the parts it cannot.
+
+Completion is not a desk decision. A job may be marked finished when every
+measurement line has an unwithdrawn certificate filed since the job arrived,
+and the refusal names the lines that are missing.
+
+### Who may sign (clause 6.2)
+
+A role says somebody is a technician. It does not say they are authorised to
+calibrate a torque wrench to four hundred newton metres, and those are separate
+questions with separate answers for the same person.
+
+An **authorisation** is granted for a discipline, optionally narrowed to one
+class and one span, for a period, at one of three levels. Filing a sheet asks
+the register whether the person who did the work was authorised on the day they
+did it; approving one asks whether the approver may approve. Both refuse with
+the reason, and the near miss is quoted rather than "nothing is held", because
+being told an authorisation lapsed last month is useful and being told nothing
+exists sends somebody to grant a duplicate.
+
+### The rooms (clause 6.3)
+
+An excursion is a **run of readings**, not a reading. One sample half a degree
+over on a Tuesday afternoon is a door being held open; the same half degree for
+six hours is a failed air conditioner and every certificate issued in that room
+while it lasted is in question.
+
+Severity is judged on duration and on magnitude, and the worse of the two wins:
+duration catches the slow failures that never go far, magnitude catches the
+sharp ones that are over in minutes, and a rule using only one would miss
+whichever kind the laboratory had not had yet.
+
+Anything above minor raises a nonconformance on its own and can pull the
+certificates issued in that room while it lasted. Withdrawing them replays each
+instrument's interval, so the recall dates move without anybody touching them.
+
+### Nonconformances (clause 8.7)
+
+Four answers close one: what was done to contain it, what caused it, what was
+done about the cause, and whether that worked. Each stage writes its text and
+its date together through a method that refuses one without the other, because
+a stage with a date and no text is a tick in a box.
+
+The severity decides how much closing costs. A low severity record closes once
+something was done; a high severity one has to prove the action worked. That is
+the composition the whole subsystem is built around: the severity is not a
+label, it changes what the other stages are allowed to do.
+
+### The schedule of accreditation (clause 7.8)
+
+A boolean on the instrument class was wrong in both directions. A schedule is
+granted per measurement, over a stated range, to a stated best measurement
+capability, for a period: "MIC-EXT is accredited" is true to a hundred
+millimetres and false at two hundred, and it stops being true on the day the
+schedule lapses.
+
+A certificate fixes its decision rule and its accreditation claim at the moment
+it is filed, and never works either out again. Working them out on read would
+quietly rewrite what an old certificate claimed the next time the schedule was
+reissued.
+
+### Interlaboratory comparison (clause 7.7)
+
+Both the En number and the z score are computed, and the worse of the two
+stands. A result that passes on z and fails on En is a laboratory whose value
+is near enough but whose uncertainty claim is too small, which is exactly the
+failure a scheme exists to find, and reporting the kinder of the two hides it.
+
+An unsatisfactory En raises a high severity nonconformance and names the person
+who made the measurement.
+
+### The management review pack (clause 8.9)
+
+Every input the clause lists, read out of the register rather than typed into a
+spreadsheet. The pack raises its own talking points from the numbers, because a
+pack whose talking points are typed carries whatever the person preparing it
+already wanted to discuss, and the two or three they did not want to are the
+ones the meeting exists for.

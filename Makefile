@@ -74,6 +74,17 @@ images: ## build both container images the way compose builds them
 audit: ## advisories against what actually ships
 	npm run audit
 
+.PHONY: review
+review: ## build the management review pack against a running service
+	@curl -fsS -H "Authorization: Bearer $$REGISTRY_TOKEN" \
+		http://localhost:8080/api/management-review | node -e \
+		"let b='';process.stdin.on('data',c=>b+=c).on('end',()=>{const p=JSON.parse(b);\
+		console.log(p.period.from+' to '+p.period.to);p.talkingPoints.forEach(t=>console.log(' - '+t));})"
+
+.PHONY: loggers
+loggers: ## poll the room loggers once and post what they hold
+	cd $(SERVICE) && npm run build --silent && node dist/tools/logger-poll.js
+
 .PHONY: verify
 verify: ## everything ci runs, in the order ci runs it
 	./scripts/check.sh
