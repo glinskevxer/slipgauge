@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { CompetenceModule } from '../competence/competence.module';
+import { InstrumentClass } from '../instrument/instrument-class.entity';
 import { InstrumentModule } from '../instrument/instrument.module';
 import { ScopeModule } from '../scope/scope.module';
 import { ImpactModule } from '../impact/impact.module';
@@ -17,6 +18,7 @@ import { CalibrationService } from './calibration.service';
 import { ConformityAssessor } from './conformity';
 import { MeasurementPoint } from './measurement-point.entity';
 import { ToleranceProfile } from './tolerance-profile.entity';
+import { ToleranceProfileController } from './tolerance-profile.controller';
 import { ToleranceProfileService } from './tolerance-profile.service';
 
 @Module({
@@ -27,6 +29,7 @@ import { ToleranceProfileService } from './tolerance-profile.service';
       CalibrationCertificate,
       MeasurementPoint,
       CertificateAttachment,
+      InstrumentClass,
     ]),
     SecurityModule,
     InstrumentModule,
@@ -35,7 +38,11 @@ import { ToleranceProfileService } from './tolerance-profile.service';
     IntervalModule,
     ImpactModule,
   ],
-  controllers: [CalibrationController, CertificateHistoryController],
+  controllers: [
+    CalibrationController,
+    CertificateHistoryController,
+    ToleranceProfileController,
+  ],
   providers: [
     ConformityAssessor,
     ToleranceProfileService,

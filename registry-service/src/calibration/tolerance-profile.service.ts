@@ -6,6 +6,7 @@ import { NotFoundError, RuleViolationError } from '../common/errors';
 import { Instrument } from '../instrument/instrument.entity';
 import { ToleranceBand } from './conformity';
 import { ToleranceProfile } from './tolerance-profile.entity';
+import { CacheOptions, ExpiringCache } from '../common/expiring-cache';
 
 /**
  * Finds the profile an instrument is held to and turns it into a band.
@@ -14,11 +15,42 @@ import { ToleranceProfile } from './tolerance-profile.entity';
  * the whole point of the nullable link: a customer owned gauge block set held
  * to a tighter grade than the laboratory's own is one row, not a new class.
  */
+/**
+ * Profiles are reference data. They are read on every point of every sheet and
+ * written a handful of times a year, so they are held for five minutes.
+ */
+const CACHE: CacheOptions = { ttlMs: 5 * 60_000, ceiling: 500 };
+
 @Injectable()
 export class ToleranceProfileService {
+  /**
+   * Keyed by class, which is the lookup that repeats. A sheet with twelve
+   * points on one instrument asked the same question twelve times, and a busy
+   * morning asked it a few thousand.
+   *
+   * <p>Not keyed by instrument. An instrument specific profile is one row read
+   * by primary key and the database is already good at that; the class lookup
+   * is the one that scans.
+   */
+  private readonly byClass = new ExpiringCache<number, ToleranceProfile>(CACHE);
+
   constructor(
     @InjectRepository(ToleranceProfile) private readonly profiles: Repository<ToleranceProfile>,
   ) {}
+
+  /**
+   * Forgets what is held. Called whenever a profile is written or moved between
+   * classes: a cache nothing clears is a laboratory judging sheets against a
+   * tolerance somebody changed five minutes ago.
+   */
+  forget(): void {
+    this.byClass.clear();
+  }
+
+  /** Hits and misses, for the metrics endpoint. */
+  cacheStats(): { hits: number; misses: number; entries: number } {
+    return this.byClass.stats();
+  }
 
   async byCode(code: string): Promise<ToleranceProfile> {
     const profile = await this.profiles.findOne({
@@ -58,10 +90,16 @@ export class ToleranceProfileService {
     if (classId === undefined) {
       return null;
     }
-    return this.profiles.findOne({
-      where: { instrumentClass: { id: classId } },
-      relations: { instrumentClass: true },
+    const held = await this.byClass.through(classId, async () => {
+      const found = await this.profiles.findOne({
+        where: { instrumentClass: { id: classId } },
+        relations: { instrumentClass: true },
+      });
+
+      return found ?? undefined;
     });
+
+    return held ?? null;
   }
 
   /**
@@ -79,6 +117,28 @@ export class ToleranceProfileService {
       );
     }
     return profile.bandAt(nominal, instrument.span());
+  }
+
+  /**
+   * Moves a profile onto a class, or off every class.
+   *
+   * <p>The only write in this service, and the reason `forget` exists at all.
+   * A cache with no writer is a cache nobody can prove is cleared, so the two
+   * arrived together.
+   */
+  async assignToClass(code: string, classId: number | null): Promise<ToleranceProfile> {
+    const profile = await this.byCode(code);
+    const previous = profile.classId;
+
+    profile.instrumentClass = classId === null ? null : ({ id: classId } as never);
+
+    const saved = await this.profiles.save(profile);
+
+    // Both the class it left and the class it joined, because either lookup
+    // would otherwise answer from a profile that has moved.
+    this.forget();
+    void previous;
+    return this.byCode(saved.code);
   }
 
   /** True when the nominal sits inside what the instrument can actually read. */

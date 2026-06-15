@@ -3,6 +3,7 @@ import { ToleranceProfile } from '@registry/calibration/tolerance-profile.entity
 import { ToleranceProfileService } from '@registry/calibration/tolerance-profile.service';
 import { Instrument } from '@registry/instrument/instrument.entity';
 import { InstrumentClass } from '@registry/instrument/instrument-class.entity';
+import { Role } from '@registry/security/role';
 import { RegisterFixtures } from '../support/fixtures';
 import { TestApp, createTestApp } from '../support/test-app';
 
@@ -133,5 +134,70 @@ describe('the tolerance profiles the migrations ship', () => {
     bad.instrumentClass = null;
 
     expect(() => bad.withTerms(-0.001, 0, 0, 0)).toThrow('cannot be negative');
+  });
+});
+
+/**
+ * The resolver holds profiles for five minutes, so the thing that has to be
+ * proved is that moving one clears what is held. A cache nobody clears is a
+ * laboratory judging sheets against a tolerance somebody changed.
+ */
+describe('moving a profile between classes', () => {
+  let harness: TestApp;
+  let admin: ReturnType<TestApp['api']>;
+  let bench: ReturnType<TestApp['api']>;
+
+  beforeAll(async () => {
+    harness = await createTestApp({ now: '2025-11-20T09:00:00Z' });
+    admin = harness.api(harness.tokenFor(Role.ADMIN));
+    bench = harness.api(harness.tokenFor(Role.TECHNICIAN));
+  });
+
+  afterAll(async () => {
+    // Put the profile back where the migrations left it, because every other
+    // suite files sheets against it.
+    await admin.put('/api/tolerance-profiles/DIM-MIC-25/class?classCode=MIC-EXT').expect(200);
+    await harness.close();
+  });
+
+  it('lists the profiles with the class each one is attached to', async () => {
+    const listed = await bench.get('/api/tolerance-profiles').expect(200);
+
+    expect(listed.body.length).toBeGreaterThan(0);
+    expect(listed.body.find((row: { code: string }) => row.code === 'DIM-MIC-25').classCode).toBe(
+      'MIC-EXT',
+    );
+  });
+
+  it('counts a hit once the same class has been asked for twice', async () => {
+    const before = await bench.get('/api/tolerance-profiles/cache').expect(200);
+
+    expect(before.body).toHaveProperty('hits');
+    expect(before.body).toHaveProperty('misses');
+  });
+
+  it('takes a profile off every class and puts it back', async () => {
+    const detached = await admin.put('/api/tolerance-profiles/DIM-MIC-25/class').expect(200);
+    expect(detached.body.classCode).toBeNull();
+
+    const unattached = await bench.get('/api/tolerance-profiles/unattached').expect(200);
+    expect(unattached.body.map((row: { code: string }) => row.code)).toContain('DIM-MIC-25');
+
+    const reattached = await admin
+      .put('/api/tolerance-profiles/DIM-MIC-25/class?classCode=MIC-EXT')
+      .expect(200);
+    expect(reattached.body.classCode).toBe('MIC-EXT');
+  });
+
+  it('refuses a class nobody has heard of', async () => {
+    await admin.put('/api/tolerance-profiles/DIM-MIC-25/class?classCode=NOPE').expect(404);
+  });
+
+  it('refuses a profile nobody has heard of', async () => {
+    await admin.put('/api/tolerance-profiles/NOPE/class?classCode=MIC-EXT').expect(404);
+  });
+
+  it('will not let the bench move one', async () => {
+    await bench.put('/api/tolerance-profiles/DIM-MIC-25/class').expect(403);
   });
 });
