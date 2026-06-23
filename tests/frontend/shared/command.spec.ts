@@ -119,3 +119,65 @@ describe('searching the command list', () => {
     expect(first).toEqual(again);
   });
 });
+
+/**
+ * The commands that arrived with the later screens. What matters is that they
+ * are reachable by the words somebody would actually type, that the shortcuts
+ * do not collide, and that the ones behind a role stay behind it.
+ */
+describe('the commands for the quality screens', () => {
+  function idsFor(term: string, roles: Role[] = ['ADMIN']): string[] {
+    return search(COMMANDS, term, roles).map((match) => match.command.id);
+  }
+
+  it('finds the room log by what people call it', () => {
+    for (const term of ['room', 'environment', 'excursion', 'logger']) {
+      expect(idsFor(term)).toContain('rooms');
+    }
+  });
+
+  it('finds the nonconformance board under capa', () => {
+    expect(idsFor('capa')).toContain('nonconformities');
+    expect(idsFor('corrective')).toContain('nonconformities');
+  });
+
+  it('finds the job desk under customer and turnaround', () => {
+    expect(idsFor('customer')).toContain('jobs');
+    expect(idsFor('turnaround')).toContain('jobs');
+  });
+
+  it('finds the review pack under the words the meeting uses', () => {
+    expect(idsFor('annual')).toContain('management-review');
+    expect(idsFor('pack')).toContain('management-review');
+  });
+
+  it('keeps the competence matrix away from the bench', () => {
+    expect(idsFor('authorised', ['TECHNICIAN'])).not.toContain('competence');
+    expect(idsFor('authorised', ['QUALITY_MANAGER'])).toContain('competence');
+  });
+
+  it('keeps the import away from anybody but an administrator', () => {
+    expect(idsFor('spreadsheet', ['QUALITY_MANAGER'])).not.toContain('import');
+    expect(idsFor('spreadsheet', ['ADMIN'])).toContain('import');
+  });
+
+  it('gives every command a distinct id', () => {
+    const ids = COMMANDS.map((command) => command.id);
+
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('gives no two commands the same shortcut', () => {
+    const shortcuts = COMMANDS.map((command) => command.shortcut).filter(Boolean);
+
+    expect(new Set(shortcuts).size).toBe(shortcuts.length);
+  });
+
+  it('gives every navigate command somewhere to go', () => {
+    for (const command of COMMANDS) {
+      if (command.kind === 'navigate' || command.kind === 'action') {
+        expect(command.route?.length ?? 0).toBeGreaterThan(0);
+      }
+    }
+  });
+});
