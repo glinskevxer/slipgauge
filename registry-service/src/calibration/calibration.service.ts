@@ -393,6 +393,113 @@ export class CalibrationService {
     return this.get(id);
   }
 
+  /**
+   * Withdraws a certificate and files its replacement in one go.
+   *
+   * <p>The register has no edit. A mistake on a certificate is corrected by
+   * withdrawing it and issuing a replacement that points back at it, and an
+   * assessment has to be able to see both. Doing it in two calls left a window
+   * where the instrument had no live certificate at all, and the interval
+   * engine replayed twice against a history that was briefly wrong.
+   *
+   * <p>The replacement is a whole sheet rather than a patch. A correction that
+   * only carries the changed field is a correction nobody can read on its own
+   * three years later.
+   */
+  async reissue(
+    id: number,
+    reason: string,
+    request: RecordCalibrationDto,
+  ): Promise<CertificateView> {
+    const original = await this.load(id);
+
+    if (original.isWithdrawn()) {
+      throw new ConflictError(
+        `certificate ${original.certificateNumber} was already withdrawn`,
+      );
+    }
+    if (original.supersededById !== null && original.supersededById !== undefined) {
+      throw new ConflictError(
+        `certificate ${original.certificateNumber} has already been replaced`,
+      );
+    }
+    if (request.certificateNumber === original.certificateNumber) {
+      throw new RuleViolationError(
+        'a replacement needs its own number, or the two cannot be told apart',
+      );
+    }
+    if (request.assetTag !== original.instrument.assetTag) {
+      throw new RuleViolationError(
+        `a replacement has to be for the same instrument, ${original.instrument.assetTag}`,
+      );
+    }
+
+    const replacement = await this.record(request);
+    const written = await this.load(replacement.id);
+
+    await this.dataSource.transaction(async (manager) => {
+      original.withdraw(`replaced by ${written.certificateNumber}: ${reason}`, this.clock.now());
+      original.supersede(written);
+      await manager.getRepository(CalibrationCertificate).save(original);
+
+      // Replayed once, at the end, against a history that now holds the
+      // replacement and not the original.
+      await this.intervals.reassess(original.instrument.id, manager);
+    });
+
+    this.log.warn(
+      `certificate ${original.certificateNumber} replaced by ${written.certificateNumber}: ${reason}`,
+    );
+    return this.get(written.id);
+  }
+
+  /**
+   * The whole revision chain a certificate belongs to, oldest first.
+   *
+   * <p>Walked backwards from whichever revision was asked for, then forwards,
+   * so an assessor who opens the withdrawn one sees the same chain as one who
+   * opens the live one.
+   */
+  async revisionsOf(id: number): Promise<CertificateView[]> {
+    const asked = await this.load(id);
+    const chain: CalibrationCertificate[] = [asked];
+
+    let earlier = await this.certificates.findOne({
+      where: { supersededBy: { id: asked.id } },
+      relations: CERTIFICATE_RELATIONS,
+    });
+
+    while (earlier) {
+      chain.unshift(earlier);
+      const previous: CalibrationCertificate | null = await this.certificates.findOne({
+        where: { supersededBy: { id: earlier.id } },
+        relations: CERTIFICATE_RELATIONS,
+      });
+
+      earlier = previous;
+    }
+
+    let later = asked.supersededById
+      ? await this.certificates.findOne({
+          where: { id: asked.supersededById },
+          relations: CERTIFICATE_RELATIONS,
+        })
+      : null;
+
+    while (later) {
+      chain.push(later);
+      const next: CalibrationCertificate | null = later.supersededById
+        ? await this.certificates.findOne({
+            where: { id: later.supersededById },
+            relations: CERTIFICATE_RELATIONS,
+          })
+        : null;
+
+      later = next;
+    }
+    return chain.map((certificate) => this.mapper.toView(certificate));
+  }
+
   async load(id: number): Promise<CalibrationCertificate> {
     const certificate = await this.certificates.findOne({
       where: { id },

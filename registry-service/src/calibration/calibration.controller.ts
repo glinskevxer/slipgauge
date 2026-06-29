@@ -70,6 +70,26 @@ export class CalibrationController {
     return this.calibrations.approve(id, approver.trim());
   }
 
+  /** Every revision of this certificate, oldest first. */
+  @Get(':id/revisions')
+  revisions(@Param('id', ParseIntPipe) id: number): Promise<CertificateView[]> {
+    return this.calibrations.revisionsOf(id);
+  }
+
+  /**
+   * Withdraws a certificate and files its replacement in one call. A quality
+   * manager job, because it withdraws something that has gone to a customer.
+   */
+  @RequireRoles(Role.QUALITY_MANAGER)
+  @Post(':id/reissue')
+  reissue(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('reason') reason: string,
+    @Body() request: RecordCalibrationDto,
+  ): Promise<CertificateView> {
+    return this.calibrations.reissue(id, reason, request);
+  }
+
   @RequireRoles(Role.QUALITY_MANAGER)
   @Post(':id/withdrawal')
   withdraw(
