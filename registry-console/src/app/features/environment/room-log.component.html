@@ -1,8 +1,8 @@
-<section class="rooms">
-  <header class="rooms__head">
+<section class="screen">
+  <header class="screen__head">
     <div>
       <h1>Room log</h1>
-      <p class="rooms__sub">
+      <p class="screen__sub">
         When a room was outside the band it is held to, and what went out anyway.
       </p>
     </div>
@@ -61,11 +61,11 @@
   }
 
   @if (store.error(); as failure) {
-    <p class="rooms__error" role="alert">{{ failure.message }}</p>
+    <p class="screen__error" role="alert">{{ failure.message }}</p>
   }
 
   @if (store.loading()) {
-    <p class="rooms__loading">Reading the log.</p>
+    <p class="screen__loading">Reading the log.</p>
   } @else if (store.isEmpty()) {
     <sg-empty-state
       headline="The rooms have behaved"

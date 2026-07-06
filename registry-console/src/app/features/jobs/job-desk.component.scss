@@ -1,34 +1,3 @@
-.desk {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sg-space-4);
-}
-
-.desk__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--sg-space-5);
-}
-
-.desk__sub {
-  margin: var(--sg-space-1) 0 0;
-  color: var(--sg-ink-muted);
-  font-size: var(--sg-text-sm);
-}
-
-.desk__error {
-  padding: var(--sg-space-3);
-  background: var(--sg-fail-soft);
-  border: 1px solid var(--sg-fail);
-  border-radius: var(--sg-radius-md);
-  color: var(--sg-fail);
-}
-
-.desk__loading {
-  color: var(--sg-ink-muted);
-}
-
 .lanes {
   display: flex;
   flex-wrap: wrap;

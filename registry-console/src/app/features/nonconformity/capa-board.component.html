@@ -1,8 +1,8 @@
-<section class="capa">
-  <header class="capa__head">
+<section class="screen">
+  <header class="screen__head">
     <div>
       <h1>Nonconformances</h1>
-      <p class="capa__sub">What went wrong, and what is being done so it does not again.</p>
+      <p class="screen__sub">What went wrong, and what is being done so it does not again.</p>
     </div>
 
     @if (store.summary(); as summary) {
@@ -59,11 +59,11 @@
   </nav>
 
   @if (store.error(); as failure) {
-    <p class="capa__error" role="alert">{{ failure.message }}</p>
+    <p class="screen__error" role="alert">{{ failure.message }}</p>
   }
 
   @if (store.loading()) {
-    <p class="capa__loading">Reading the register.</p>
+    <p class="screen__loading">Reading the register.</p>
   } @else if (store.isEmpty()) {
     <sg-empty-state
       headline="Nothing outstanding"

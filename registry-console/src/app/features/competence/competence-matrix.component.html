@@ -1,8 +1,8 @@
-<section class="matrix">
-  <header class="matrix__head">
+<section class="screen">
+  <header class="screen__head">
     <div>
       <h1>Who is authorised</h1>
-      <p class="matrix__sub">
+      <p class="screen__sub">
         Authorisations by person and discipline. A role is not an authorisation.
       </p>
     </div>
@@ -25,7 +25,7 @@
   }
 
   @if (store.error(); as failure) {
-    <p class="matrix__error" role="alert">{{ failure.message }}</p>
+    <p class="screen__error" role="alert">{{ failure.message }}</p>
   }
 
   @if (store.isEmpty()) {

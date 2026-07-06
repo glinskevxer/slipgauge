@@ -1,32 +1,5 @@
-.pack {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sg-space-4);
-}
-
-.pack__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--sg-space-5);
-}
-
 .pack__sub,
 .pack__period,
-.pack__loading {
-  margin: var(--sg-space-1) 0 0;
-  color: var(--sg-ink-muted);
-  font-size: var(--sg-text-sm);
-}
-
-.pack__error {
-  padding: var(--sg-space-3);
-  background: var(--sg-fail-soft);
-  border: 1px solid var(--sg-fail);
-  border-radius: var(--sg-radius-md);
-  color: var(--sg-fail);
-}
-
 .pack__controls {
   display: flex;
   align-items: flex-end;

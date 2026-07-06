@@ -1,8 +1,8 @@
-<section class="pack">
-  <header class="pack__head">
+<section class="screen">
+  <header class="screen__head">
     <div>
       <h1>Management review</h1>
-      <p class="pack__sub">
+      <p class="screen__sub">
         Every input clause 8.9.2 asks for, read out of the register.
       </p>
     </div>
@@ -24,11 +24,11 @@
   </header>
 
   @if (store.error(); as failure) {
-    <p class="pack__error" role="alert">{{ failure.message }}</p>
+    <p class="screen__error" role="alert">{{ failure.message }}</p>
   }
 
   @if (store.loading()) {
-    <p class="pack__loading">Reading the register.</p>
+    <p class="screen__loading">Reading the register.</p>
   } @else {
     @if (store.pack(); as pack) {
       <p class="pack__period">

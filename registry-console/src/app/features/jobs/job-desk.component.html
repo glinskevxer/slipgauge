@@ -1,8 +1,8 @@
-<section class="desk">
-  <header class="desk__head">
+<section class="screen">
+  <header class="screen__head">
     <div>
       <h1>Job desk</h1>
-      <p class="desk__sub">Customer work that is still in the building.</p>
+      <p class="screen__sub">Customer work that is still in the building.</p>
     </div>
 
     @if (store.summary(); as summary) {
@@ -60,11 +60,11 @@
   </div>
 
   @if (store.error(); as failure) {
-    <p class="desk__error" role="alert">{{ failure.message }}</p>
+    <p class="screen__error" role="alert">{{ failure.message }}</p>
   }
 
   @if (store.loading()) {
-    <p class="desk__loading">Reading the desk.</p>
+    <p class="screen__loading">Reading the desk.</p>
   } @else if (store.isEmpty()) {
     <sg-empty-state
       headline="Nothing in this lane"

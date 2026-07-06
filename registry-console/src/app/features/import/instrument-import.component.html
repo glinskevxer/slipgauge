@@ -1,8 +1,8 @@
-<section class="import">
-  <header class="import__head">
+<section class="screen">
+  <header class="screen__head">
     <div>
       <h1>Import instruments</h1>
-      <p class="import__sub">
+      <p class="screen__sub">
         A comma separated file, checked before anything is written. Nothing is added until
         you say so.
       </p>
@@ -54,7 +54,7 @@
   </div>
 
   @if (store.error(); as failure) {
-    <p class="import__error" role="alert">{{ failure.message }}</p>
+    <p class="screen__error" role="alert">{{ failure.message }}</p>
   }
 
   @if (store.report(); as report) {

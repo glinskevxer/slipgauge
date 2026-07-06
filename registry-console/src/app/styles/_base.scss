@@ -70,3 +70,42 @@ table {
 .tiles--tight sg-count-tile {
   min-width: 6rem;
 }
+
+// The chrome every full screen carries: a heading with a sentence under it, a
+// row of counts on the right, and the two paragraphs that stand in for the
+// content while it is loading or after it failed.
+//
+// Six screens had each written these out. They had drifted in the way copied
+// rules do: two of them had lost the muted colour on the sentence, one had a
+// different radius on the error box, and the newest one had no loading
+// paragraph at all because the copy it was made from predated it.
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sg-space-4);
+}
+
+.screen__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sg-space-5);
+}
+
+.screen__sub {
+  margin: var(--sg-space-1) 0 0;
+  color: var(--sg-ink-muted);
+  font-size: var(--sg-text-sm);
+}
+
+.screen__error {
+  padding: var(--sg-space-3);
+  background: var(--sg-fail-soft);
+  border: 1px solid var(--sg-fail);
+  border-radius: var(--sg-radius-md);
+  color: var(--sg-fail);
+}
+
+.screen__loading {
+  color: var(--sg-ink-muted);
+}
