@@ -10,6 +10,7 @@ import { ImpactModule } from './impact/impact.module';
 import { InstrumentModule } from './instrument/instrument.module';
 import { JobsModule } from './jobs/jobs.module';
 import { IntervalModule } from './interval/interval.module';
+import { LoanModule } from './loan/loan.module';
 import { NonconformityModule } from './nonconformity/nonconformity.module';
 import { ObservabilityModule } from './observability/observability.module';
 import { ProficiencyModule } from './proficiency/proficiency.module';
@@ -40,6 +41,7 @@ import { UsageModule } from './usage/usage.module';
     IntervalModule,
     EnvironmentModule,
     NonconformityModule,
+    LoanModule,
     ProficiencyModule,
     ReviewModule,
     RecallModule,

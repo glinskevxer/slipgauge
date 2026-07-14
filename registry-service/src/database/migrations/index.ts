@@ -20,6 +20,7 @@ import { CertificateStatements1736000000021 } from './1736000000021-CertificateS
 import { Proficiency1736000000022 } from './1736000000022-Proficiency';
 import { Sessions1736000000023 } from './1736000000023-Sessions';
 import { IndexReview1736000000024 } from './1736000000024-IndexReview';
+import { Loans1736000000025 } from './1736000000025-Loans';
 import { ProfileClassLinks1736000000004 } from './1736000000004-ProfileClassLinks';
 import { ToleranceProfiles1736000000003 } from './1736000000003-ToleranceProfiles';
 
@@ -55,4 +56,5 @@ export const MIGRATIONS = [
   Proficiency1736000000022,
   Sessions1736000000023,
   IndexReview1736000000024,
+  Loans1736000000025,
 ];
