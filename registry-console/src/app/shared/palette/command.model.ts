@@ -170,6 +170,14 @@ export const COMMANDS: readonly Command[] = [
     shortcut: 'g j',
   },
   {
+    id: 'loans',
+    title: 'Loan book',
+    hint: 'What is out of the laboratory',
+    kind: 'navigate',
+    route: ['/loans'],
+    keywords: ['borrowed', 'out', 'site', 'return', 'van'],
+  },
+  {
     id: 'rooms',
     title: 'Room log',
     hint: 'When a room was outside its band',

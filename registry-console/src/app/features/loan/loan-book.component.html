@@ -1,0 +1,114 @@
+<section class="screen">
+  <header class="screen__head">
+    <div>
+      <h1>Loan book</h1>
+      <p class="screen__sub">What is out of the laboratory, and when it is due back.</p>
+    </div>
+
+    <div class="tiles tiles--tight">
+      <sg-count-tile [count]="store.tally().out" label="out" />
+      <sg-count-tile
+        [count]="store.tally().overdue"
+        label="overdue"
+        [tone]="store.tally().overdue > 0 ? 'bad' : 'neutral'"
+      />
+      <sg-count-tile [count]="store.tally().dueThisWeek" label="due this week" />
+    </div>
+  </header>
+
+  <label class="controls__check">
+    <input
+      type="checkbox"
+      [checked]="store.includeReturned()"
+      (change)="store.showReturned($any($event.target).checked)"
+    />
+    Include what has come back
+  </label>
+
+  @if (store.error(); as failure) {
+    <p class="screen__error" role="alert">{{ failure.message }}</p>
+  }
+
+  @if (store.loading()) {
+    <p class="screen__loading">Reading the loan book.</p>
+  } @else if (store.isEmpty()) {
+    <sg-empty-state
+      headline="Nothing is out"
+      detail="Every instrument on the register is in the building."
+    />
+  } @else {
+    <ul class="loans">
+      @for (loan of store.loans(); track loan.id) {
+        <li class="loan" [class.loan--on]="openLoan() === loan.id">
+          <button type="button" class="loan__head" (click)="toggle(loan)">
+            <a class="loan__tag" [routerLink]="['/register', loan.assetTag]">{{ loan.assetTag }}</a>
+            <span class="loan__who">{{ loan.borrower }}</span>
+            <span class="loan__where">{{ loan.destination }}</span>
+            <span class="loan__when">
+              out {{ loan.issuedOn | date: 'd MMM' }}, due {{ loan.dueBackOn | date: 'd MMM' }}
+            </span>
+            <span class="loan__late" [class]="'loan__late--' + latenessTone(loan)">
+              {{ latenessInWords(loan) }}
+            </span>
+          </button>
+
+          @if (openLoan() === loan.id) {
+            <div class="detail">
+              @if (loan.purpose) {
+                <p class="detail__purpose">{{ loan.purpose }}</p>
+              }
+              <p class="detail__meta">
+                Issued by {{ loan.issuedBy }}, went out
+                {{ conditionLabel(loan.conditionOut).toLowerCase() }}
+                @if (conditionInWords(loan); as both) {
+                  <span class="detail__condition">{{ both }}</span>
+                }
+              </p>
+              @if (loan.note) {
+                <p class="detail__note">{{ loan.note }}</p>
+              }
+
+              @if (loan.out) {
+                <fieldset class="back">
+                  <legend>What state is it in now</legend>
+                  @for (condition of conditions; track condition) {
+                    <label class="back__choice">
+                      <input
+                        type="radio"
+                        name="conditionBack"
+                        [value]="condition"
+                        [checked]="returnCondition() === condition"
+                        (change)="returnCondition.set(condition)"
+                      />
+                      {{ conditionLabel(condition) }}
+                    </label>
+                  }
+                </fieldset>
+
+                <div class="detail__do">
+                  <label class="field">
+                    Anything to note
+                    <input
+                      type="text"
+                      name="returnNote"
+                      [value]="returnNote()"
+                      (input)="returnNote.set($any($event.target).value)"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    class="primary"
+                    [disabled]="!returnCondition()"
+                    (click)="bookBack(loan)"
+                  >
+                    Book it back in
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  }
+</section>

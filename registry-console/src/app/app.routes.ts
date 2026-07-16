@@ -59,6 +59,13 @@ export const APP_ROUTES: Routes = [
       import('./features/nonconformity/capa-board.component').then((m) => m.CapaBoardComponent),
   },
   {
+    path: 'loans',
+    title: 'Loan book',
+    canActivate: [signedInGuard],
+    loadComponent: () =>
+      import('./features/loan/loan-book.component').then((m) => m.LoanBookComponent),
+  },
+  {
     path: 'rooms',
     title: 'Room log',
     canActivate: [signedInGuard],

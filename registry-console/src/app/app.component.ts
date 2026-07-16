@@ -40,6 +40,7 @@ export class AppComponent {
     { path: '/recalls/capacity', label: 'Capacity', hint: 'Whether the benches can take it' },
     { path: '/impact', label: 'Impact', hint: 'Where an out of tolerance result reached' },
     { path: '/rooms', label: 'Rooms', hint: 'When a room was outside its band' },
+    { path: '/loans', label: 'Loans', hint: 'What is out of the laboratory' },
     { path: '/nonconformities', label: 'CAPA', hint: 'What went wrong and what was done' },
   ]);
 
