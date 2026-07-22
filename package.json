@@ -20,7 +20,11 @@
     "e2e:report": "playwright show-report",
     "postinstall": "npm --prefix registry-service install && npm --prefix registry-console install",
     "audit": "npm --prefix registry-service audit --omit=dev --audit-level=moderate && npm --prefix registry-console audit --omit=dev --audit-level=moderate",
-    "outdated": "npm --prefix registry-service outdated || true"
+    "outdated": "npm --prefix registry-service outdated || true",
+    "test": "npm run test:backend && npm run test:backend:integration && npm run test:frontend",
+    "typecheck": "npm --prefix registry-service run typecheck && npm --prefix registry-console run typecheck",
+    "lint": "npm --prefix registry-console run lint",
+    "loggers": "npm --prefix registry-service run build --silent && node registry-service/dist/tools/logger-poll.js"
   },
   "devDependencies": {
     "@playwright/test": "1.50.1",

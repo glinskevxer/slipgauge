@@ -49,6 +49,29 @@ scripts/             check.sh runs what CI runs, dev-up.sh brings it all up
 docs/                how it fits together
 ```
 
+## What else it keeps
+
+The register started as the laboratory's own equipment and the certificates
+against it. Everything here was added because an assessment asked for it, and
+each one is written up properly in `docs/architecture.md`.
+
+| what | clause | the rule worth knowing |
+| --- | --- | --- |
+| **Customer jobs** | 7.1 | An item becomes a register row when contract review accepts it, and not before. |
+| **Contract review** | 7.1.1 | Four questions in order. The checker decides what we can do; the reviewer decides what the customer has agreed to. |
+| **Authorisations** | 6.2 | A role says somebody is a technician. It does not say what they may sign for. |
+| **The room log** | 6.3 | An excursion is a run of readings, not a reading. |
+| **Nonconformances** | 8.7 | The severity decides how much closing one costs. |
+| **Schedule of accreditation** | 7.8 | Granted per measurement, over a range, to a capability, for a period. |
+| **Proficiency testing** | 7.7 | Both En and z are scored, and the worse of the two stands. |
+| **The loan book** | 6.4.6 | The instrument's status follows the loan rather than sitting beside it. |
+| **Management review** | 8.9 | Every input, read out of the register, with talking points it raised itself. |
+
+The parts join up. A room that goes outside its band raises a nonconformance on
+its own, can pull the certificates issued in it while it lasted, and withdrawing
+those replays each instrument's interval so the recall dates move without
+anybody touching them.
+
 Every test in the repository lives under `tests/`, on purpose. A test tree that
 mirrors the source tree tends to grow a test per class, and that is not the same
 thing as covering the rules.
@@ -66,6 +89,11 @@ npm ci                # both sides
 
 That prints where everything is listening. Sign in as `h.whitcombe` with
 `demo-password-not-for-real-use`.
+
+The demo laboratory is built so every screen has something on it: three
+customers with a job each waiting on contract review, a week of room readings
+with one afternoon the chiller failed, the nonconformance that afternoon raised
+on its own, and a management review pack for the year.
 
 Piecemeal:
 
@@ -91,6 +119,21 @@ a service somebody will deploy with a shipped signing key.
 | `REGISTRY_INTERVAL_*` | the four numbers the interval procedure fixes |
 | `LAB_NAME`, `LAB_ACCREDITATION_REF` | printed on certificates |
 | `REGISTRY_DEMO_ESTATE` | `true` loads a demo laboratory into an empty register |
+| `REGISTRY_BCRYPT_ROUNDS` | work factor for password hashing, ten is the floor |
+| `REGISTRY_LOGGER_*` | the room logger poller, which runs as its own process |
+
+## Running the room loggers
+
+The loggers sit on the laboratory network and are read by their own process,
+not by the service. A logger that is unplugged for a week must not be able to
+hold up a request from a bench.
+
+```
+make loggers          # one pass over every room in REGISTRY_LOGGER_ROOMS
+```
+
+It is run by cron in the laboratory and by the `loggers` compose profile
+anywhere else.
 
 ## What is deliberately not here
 
@@ -105,6 +148,15 @@ a service somebody will deploy with a shipped signing key.
 - **No open route by default.** The guard denies unless a route says otherwise,
   so a new endpoint added without a thought about access is closed rather than
   open.
+- **No editing a certificate's decision rule after the fact.** The rule and the
+  accreditation claim are fixed when the sheet is filed. Working them out again
+  on read would quietly rewrite what an old certificate claimed the next time
+  the schedule was reissued.
+- **No second replica.** The rate limiter and the sign in counter are held in
+  memory, so two of them would double every allowance. The note is beside the
+  allowances in `rate-limit.ts`.
+- **No index per foreign key.** The ones that are there came from query plans
+  against a copy of the live register. Every index is written on every insert.
 
 ## Licence
 

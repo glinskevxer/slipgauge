@@ -88,6 +88,15 @@ cat <<'BANNER'
 
   Sign in as h.whitcombe with demo-password-not-for-real-use
 
+  The demo laboratory has something on every screen:
+
+    /jobs               three customers, a job each, waiting on contract review
+    /rooms              a week of readings with one afternoon the chiller failed
+    /nonconformities    the finding that afternoon raised on its own
+    /competence         who is authorised, and where there is nobody to approve
+    /loans              nothing out yet, book one out and bring it back damaged
+    /management-review  the pack for the year, with its own talking points
+
   Control C stops everything this script started.
 
 BANNER

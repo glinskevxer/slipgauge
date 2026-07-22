@@ -11,6 +11,7 @@ import { InstrumentClass } from '../instrument/instrument-class.entity';
 import { StorageLocation } from '../instrument/storage-location.entity';
 import { Customer } from '../jobs/customer.entity';
 import { Job } from '../jobs/job.entity';
+import { EquipmentLoan } from '../loan/equipment-loan.entity';
 import { AccreditationScope } from '../scope/accreditation-scope.entity';
 import { InstrumentModule } from '../instrument/instrument.module';
 import { AppUser } from '../security/app-user.entity';
@@ -32,6 +33,7 @@ import { DemoEstateService } from './demo-estate.service';
       EnvironmentReading,
       Customer,
       Job,
+      EquipmentLoan,
     ]),
     InstrumentModule,
     CalibrationModule,

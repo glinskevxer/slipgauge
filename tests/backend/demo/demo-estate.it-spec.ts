@@ -259,3 +259,55 @@ describe('what else the demo loads', () => {
     expect(after.body).toHaveLength(before.body.length);
   });
 });
+
+/**
+ * The loan book. A demo where everything is where it should be shows an empty
+ * screen and teaches nobody what the screen is for.
+ */
+describe('what the demo has on loan', () => {
+  let harness: TestApp;
+  let http: ReturnType<TestApp['api']>;
+
+  beforeAll(async () => {
+    harness = await createTestApp({ now: '2025-12-01T09:00:00Z' });
+    http = harness.api(harness.tokenFor(Role.TECHNICIAN));
+    await harness.reset();
+    await harness.app.get(DemoEstateService).load();
+  });
+
+  afterAll(async () => {
+    await harness.close();
+  });
+
+  it('has one instrument out on site', async () => {
+    const out = await http.get('/api/loans').expect(200);
+
+    expect(out.body).toHaveLength(1);
+    expect(out.body[0]).toMatchObject({
+      borrower: 'J Fenwick',
+      destination: 'Fenland Turbines, Wisbech',
+      out: true,
+    });
+  });
+
+  it('leaves it overdue, which is the state the screen is for', async () => {
+    const out = await http.get('/api/loans').expect(200);
+
+    expect(out.body[0].overdue).toBe(true);
+    expect(out.body[0].lateness).toBeGreaterThan(0);
+  });
+
+  it('marks the instrument itself as out rather than in service', async () => {
+    const out = await http.get('/api/loans').expect(200);
+    const instrument = await http.get(`/api/instruments/by-tag/${out.body[0].assetTag}`).expect(200);
+
+    expect(instrument.body.status).toBe('ON_LOAN');
+  });
+
+  it('does not lend a second one when the demo is loaded again', async () => {
+    await harness.app.get(DemoEstateService).load();
+
+    const out = await http.get('/api/loans').expect(200);
+    expect(out.body).toHaveLength(1);
+  });
+});

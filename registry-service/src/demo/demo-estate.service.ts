@@ -18,8 +18,10 @@ import { Customer, customer } from '../jobs/customer.entity';
 import { jobItem } from '../jobs/job-item.entity';
 import { Job, job } from '../jobs/job.entity';
 import { JobService } from '../jobs/job.enums';
+import { EquipmentLoan, equipmentLoan } from '../loan/equipment-loan.entity';
 import { AccreditationScope, scopeLine } from '../scope/accreditation-scope.entity';
 import { InstrumentService } from '../instrument/instrument.service';
+import { InstrumentStatus } from '../instrument/instrument.enums';
 import { AppUser } from '../security/app-user.entity';
 import { Role } from '../security/role';
 import { StandardRole } from '../traceability/standard-role';
@@ -105,6 +107,9 @@ const LOGGER_FROM = '2025-11-17';
 
 /** When the demo customer jobs arrived. */
 const JOBS_FROM = '2025-11-24';
+
+/** Far enough back that the loan the demo makes is already overdue. */
+const LOAN_FROM = '2025-11-10';
 
 interface ScopeLine {
   readonly scheduleRef: string;
@@ -196,6 +201,7 @@ export class DemoEstateService {
     private readonly readings: Repository<EnvironmentReading>,
     @InjectRepository(Customer) private readonly customers: Repository<Customer>,
     @InjectRepository(Job) private readonly jobs: Repository<Job>,
+    @InjectRepository(EquipmentLoan) private readonly loans: Repository<EquipmentLoan>,
     private readonly instruments: InstrumentService,
     private readonly environment: EnvironmentService,
     private readonly calibrations: CalibrationService,
@@ -223,6 +229,7 @@ export class DemoEstateService {
     await this.writeTheSchedule();
     await this.openTheRooms();
     await this.bookSomeCustomerWork();
+    await this.lendSomethingOut();
 
     const loaded = await this.register.count();
 
@@ -435,6 +442,40 @@ export class DemoEstateService {
       ];
       await this.jobs.save(booked);
     }
+  }
+
+  /**
+   * Sends one instrument out on site and leaves it there, overdue.
+   *
+   * <p>An overdue loan is the state the loan book exists to show, and a demo
+   * where everything is where it should be shows an empty screen and teaches
+   * nobody what the screen is for.
+   */
+  private async lendSomethingOut(): Promise<void> {
+    if ((await this.loans.count()) > 0) {
+      return;
+    }
+    const going = await this.register.findOne({
+      where: { status: InstrumentStatus.IN_SERVICE, isReference: false },
+      order: { assetTag: 'ASC' },
+    });
+
+    if (!going) {
+      return;
+    }
+    const loan = equipmentLoan(
+      going,
+      'J Fenwick',
+      'Fenland Turbines, Wisbech',
+      LOAN_FROM,
+      'h.whitcombe',
+    ).due(plusDays(LOAN_FROM, 7));
+
+    loan.purpose = 'setting a press on site for the week';
+
+    going.transitionTo(InstrumentStatus.ON_LOAN);
+    await this.register.save(going);
+    await this.loans.save(loan);
   }
 
   private async createStandard(): Promise<Instrument> {
