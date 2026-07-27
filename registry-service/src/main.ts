@@ -7,6 +7,15 @@ import { ProblemDetailFilter } from './common/problem-detail.filter';
 import type { LabConfig } from './config/lab.config';
 import { mountOpenApi } from './config/openapi';
 import type { SecurityConfig } from './config/security.config';
+import type { IntervalPolicy } from './interval/interval-policy';
+import type { RuntimeSettings } from './config/startup-check';
+import {
+  checkSettings,
+  describeProblem,
+  refusals,
+  settingsBanner,
+  warnings,
+} from './config/startup-check';
 
 /** Routes that answer before the api prefix, for an operator with no token. */
 const UNPREFIXED = ['health', 'health/readiness', 'metrics'];
@@ -16,6 +25,8 @@ async function bootstrap(): Promise<void> {
   const config = app.get(ConfigService);
   const lab = config.getOrThrow<LabConfig>('lab');
   const security = config.getOrThrow<SecurityConfig>('security');
+
+  checkTheSettings(config);
 
   app.setGlobalPrefix('api', { exclude: UNPREFIXED });
 
@@ -62,6 +73,51 @@ async function bootstrap(): Promise<void> {
     `${lab.name} registry listening on ${port}, accreditation ${lab.accreditationRef}, ` +
       `console origins ${security.allowedOrigins.join(' ')}`,
   );
+}
+
+/**
+ * Reads the settings back and refuses to carry on if any of them is wrong.
+ *
+ * <p>Before the port is opened, so a refusal is a container that will not start
+ * rather than one that starts and then serves a laboratory with a shipped
+ * signing key. The warnings are logged and the boot continues, because the
+ * things that only matter in production have to be visible in development or
+ * nobody fixes them before the deployment.
+ */
+function checkTheSettings(config: ConfigService): void {
+  const log = new Logger('settings');
+  const lab = config.getOrThrow<LabConfig>('lab');
+  const security = config.getOrThrow<SecurityConfig>('security');
+  const interval = config.getOrThrow<IntervalPolicy>('interval');
+
+  const settings: RuntimeSettings = {
+    nodeEnv: process.env['NODE_ENV'] ?? 'development',
+    jwtSecret: security.jwtSecret,
+    bcryptRounds: security.bcryptRounds,
+    allowedOrigins: security.allowedOrigins,
+    demoEstate: (process.env['REGISTRY_DEMO_ESTATE'] ?? 'false').toLowerCase() === 'true',
+    passesBeforeExtension: interval.passesBeforeExtension,
+    extensionStep: interval.extensionStep,
+    failureFactor: interval.failureFactor,
+    driftBrake: interval.driftBrake,
+    accreditationRef: lab.accreditationRef,
+  };
+
+  const problems = checkSettings(settings);
+
+  for (const problem of warnings(problems)) {
+    log.warn(describeProblem(problem));
+  }
+
+  const stopping = refusals(problems);
+
+  if (stopping.length > 0) {
+    for (const problem of stopping) {
+      log.error(describeProblem(problem));
+    }
+    throw new Error(`${stopping.length} setting(s) will not do, see above`);
+  }
+  log.log(settingsBanner(settings));
 }
 
 void bootstrap();

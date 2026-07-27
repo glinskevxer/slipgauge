@@ -38,10 +38,10 @@ services:
       LAB_NAME: ${LAB_NAME:-Slipgauge Metrology}
       # The interval procedure's four numbers. Left at the defaults the class
       # table carries unless the laboratory has written down otherwise.
-      REGISTRY_INTERVAL_TARGET_PASSES: ${REGISTRY_INTERVAL_TARGET_PASSES:-3}
-      REGISTRY_INTERVAL_EXTENSION_PERCENT: ${REGISTRY_INTERVAL_EXTENSION_PERCENT:-25}
-      REGISTRY_INTERVAL_REDUCTION_PERCENT: ${REGISTRY_INTERVAL_REDUCTION_PERCENT:-50}
-      REGISTRY_INTERVAL_DRIFT_LIMIT: ${REGISTRY_INTERVAL_DRIFT_LIMIT:-0.6}
+      REGISTRY_INTERVAL_PASSES: ${REGISTRY_INTERVAL_PASSES:-2}
+      REGISTRY_INTERVAL_EXTENSION_STEP: ${REGISTRY_INTERVAL_EXTENSION_STEP:-0.15}
+      REGISTRY_INTERVAL_FAILURE_FACTOR: ${REGISTRY_INTERVAL_FAILURE_FACTOR:-0.5}
+      REGISTRY_INTERVAL_DRIFT_BRAKE: ${REGISTRY_INTERVAL_DRIFT_BRAKE:-0.7}
       # Never on in a real deployment. The compose file is used for a demo as
       # often as for anything else, so it is a variable rather than a comment.
       REGISTRY_DEMO_ESTATE: ${REGISTRY_DEMO_ESTATE:-false}
