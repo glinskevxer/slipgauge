@@ -22,10 +22,64 @@ test.describe('the command palette', () => {
 
   test('narrows as you type', async ({ signedIn: page }) => {
     await page.keyboard.press('Control+k');
-    await page.getByPlaceholder('Type a command').fill('capa');
+    await page.getByPlaceholder('Type a command').fill('capacit');
 
     await expect(page.locator('.result')).toHaveCount(1);
     await expect(page.locator('.result').first()).toContainText('Capacity');
+  });
+
+  /**
+   * "capa" is genuinely ambiguous now: it is most of "Capacity" and it is what
+   * everybody calls the nonconformance board. Both are offered, and the title
+   * match comes first, which is the behaviour rather than an accident of the
+   * order the commands are declared in.
+   */
+  test('offers both when the term is genuinely ambiguous, best first', async ({
+    signedIn: page,
+  }) => {
+    await page.keyboard.press('Control+k');
+    await page.getByPlaceholder('Type a command').fill('capa');
+
+    await expect(page.locator('.result')).toHaveCount(2);
+    await expect(page.locator('.result').first()).toContainText('Capacity');
+    await expect(page.locator('.result').nth(1)).toContainText('Nonconformances');
+  });
+
+  test('finds the room log by what the bench calls it', async ({ signedIn: page }) => {
+    await page.keyboard.press('Control+k');
+    await page.getByPlaceholder('Type a command').fill('excursion');
+
+    await expect(page.locator('.result').first()).toContainText('Room log');
+  });
+
+  test('finds the job desk under the customer word', async ({ signedIn: page }) => {
+    await page.keyboard.press('Control+k');
+    await page.getByPlaceholder('Type a command').fill('customer');
+
+    await expect(page.locator('.result').first()).toContainText('Job desk');
+  });
+
+  test('finds the loan book under what is out on site', async ({ signedIn: page }) => {
+    await page.keyboard.press('Control+k');
+    await page.getByPlaceholder('Type a command').fill('borrowed');
+
+    await expect(page.locator('.result').first()).toContainText('Loan book');
+  });
+
+  test('finds the review pack under the words the meeting uses', async ({ signedIn: page }) => {
+    await page.keyboard.press('Control+k');
+    await page.getByPlaceholder('Type a command').fill('annual');
+
+    await expect(page.locator('.result').first()).toContainText('Management review pack');
+  });
+
+  test('goes to the room log when its result is used', async ({ signedIn: page }) => {
+    await page.keyboard.press('Control+k');
+    await page.getByPlaceholder('Type a command').fill('room log');
+    await page.locator('.result').first().click();
+
+    await expect(page).toHaveURL(/\/rooms$/);
+    await expect(page.getByRole('heading', { name: 'Room log' })).toBeVisible();
   });
 
   test('finds a command through a word that is not in its title', async ({ signedIn: page }) => {

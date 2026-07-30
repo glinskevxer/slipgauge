@@ -195,40 +195,36 @@ test.describe('the nonconformance board', () => {
     await expect(page.getByText(/cannot close until effectiveness checked/)).toBeVisible();
   });
 
-  test('records the containment and reads the record back', async ({ signedIn: page, registry }) => {
-    await registry.on(
-      '**/api/nonconformities/NC-2025-001/containment',
-      nonconformance('NC-2025-001', {
-        state: 'CONTAINED',
-        containment: 'work in the room stopped',
-        containedOn: '2025-11-21',
-        answersGiven: 1,
-      }),
-    );
-
+  /**
+   * What this proves is that the typed answer reaches the service on the right
+   * route with the right body. What it deliberately does not prove is that the
+   * panel then redraws: the board reloads the whole list afterwards, and
+   * stubbing that reload needs a glob whose `?` also matches the containment
+   * path, so the two stubs raced and the test failed about one run in four.
+   *
+   * <p>The redraw is covered by the component test, where the two responses are
+   * separate and ordered. An end to end test that has to be told which of two
+   * overlapping stubs wins is testing the stub.
+   */
+  test('sends the typed containment to the right route', async ({ signedIn: page }) => {
     await page.goto('/nonconformities');
     await page.locator('.record__head').first().click();
 
-    // The board reloads after a stage is recorded, so the list has to answer
-    // with the record as it now is. Re-stubbed after the first load rather than
-    // before it, or the panel would open on a record that is already contained.
-    const contained = nonconformance('NC-2025-001', {
-      state: 'CONTAINED',
-      containment: 'work in the room stopped',
-      containedOn: '2025-11-21',
-      answersGiven: 1,
-    });
-    await registry.on('**/api/nonconformities?*', [contained]);
-    await registry.on('**/api/nonconformities', [contained]);
-
     await page.getByLabel('Contained').fill('work in the room stopped');
-    await page.getByRole('button', { name: 'Record it' }).click();
 
-    // The board posts the stage and then reloads the whole list, so this waits
-    // on two round trips rather than one. Under four workers the default five
-    // seconds was not always enough and the test failed on the clock.
-    await expect(page.getByText('work in the room stopped').first()).toBeVisible({
-      timeout: 15_000,
-    });
+    const record = page.getByRole('button', { name: 'Record it' });
+
+    // Disabled until the typed answer has reached the signal, so this waits on
+    // the component rather than on the clock.
+    await expect(record).toBeEnabled();
+
+    const [request] = await Promise.all([
+      page.waitForRequest(
+        (call) => call.method() === 'POST' && call.url().endsWith('/NC-2025-001/containment'),
+      ),
+      record.click(),
+    ]);
+
+    expect(request.postDataJSON()).toEqual({ text: 'work in the room stopped' });
   });
 });
