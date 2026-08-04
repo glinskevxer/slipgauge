@@ -15,7 +15,10 @@ blob-report/
 .vscode/
 .DS_Store
 
-.env
-.env.local
+# Every .env, however it is suffixed. The two exact names this used to list are
+# not the ones that get committed by accident: .env.production.local and
+# .env.registry-service are.
+.env*
+!.env.example
 /ops/local/pgdata/
 *.tsbuildinfo

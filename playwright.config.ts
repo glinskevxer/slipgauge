@@ -39,13 +39,22 @@ export default defineConfig({
     },
   ],
 
+  // The three minutes this used to allow was measured on a warm machine, where
+  // .angular/cache already holds the build graph. CI has no such cache: it is
+  // gitignored, and the npm cache setup/node restores does not cover it. So the
+  // first compile on a two core runner is a cold one of the whole console, and
+  // three minutes is not reliably enough. Six is not generous, it is honest.
+  //
+  // The output is piped rather than dropped for the same reason. A dropped
+  // stdout turns a slow compile and a broken one into the same message, which
+  // is a timeout with nothing above it to read.
   webServer: {
     command: 'npm --prefix registry-console run start -- --port 4300 --host 127.0.0.1',
     cwd: __dirname,
     url: 'http://127.0.0.1:4300',
     reuseExistingServer: !process.env['CI'],
-    timeout: 180_000,
-    stdout: 'ignore',
+    timeout: 360_000,
+    stdout: 'pipe',
     stderr: 'pipe',
   },
 });
